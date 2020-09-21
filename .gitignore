@@ -1,0 +1,6 @@
+/tasker
+/tasker.db
+/tasker-*.db.gz
+/.env
+/internal/statik
+

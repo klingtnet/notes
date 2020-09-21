@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+set -eu
+
+sqlcipher tasker.db -cmd "PRAGMA key = \"$DATABASE_PASSPHRASE\"; PRAGMA foreihn_keys = ON;"

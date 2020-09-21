@@ -1,0 +1,30 @@
+div.note-form {
+  display: flex;
+  flex-flow: column;
+}
+
+textarea#note {
+  font-family: monospace;
+}
+
+div.content {
+  padding-left: 2rem;
+}
+
+span.version {
+  font-family: monospace;
+  font-size: large;
+}
+
+time.updated {
+  padding: 0.1rem 0.3rem;
+  border-radius: 0.1rem;
+  font-weight: bold;
+}
+
+footer > ul.footer {
+  list-style: none;
+  display: grid;
+  color: var(--color-text-secondary);
+  grid-auto-flow: column;
+}

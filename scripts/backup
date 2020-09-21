@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+BACKUP_FILE="tasker-$(date --rfc-3339=date).db.gz"
+pigz tasker.db -c > $BACKUP_FILE
+

@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+set -eu
+
+./tasker $DATABASE_PASSPHRASE :3333 $JIRA_ROOT_URL
