@@ -11,7 +11,7 @@ embeds.go:
 	go run github.com/klingtnet/embed/cmd/embed --include assets --include migrations --include views
 
 run: notes
-	@./scripts/run
+	go run . --database-passphrase $$DATABASE_PASSPHRASE
 
 clean:
 	git clean -fd

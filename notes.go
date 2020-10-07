@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -13,7 +14,6 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -26,6 +26,7 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	embedMigrate "github.com/klingtnet/embed/migrate"
 	_ "github.com/mutecomm/go-sqlcipher/v4"
+	"github.com/urfave/cli/v2"
 	"github.com/yuin/goldmark"
 	goldmarkEmoji "github.com/yuin/goldmark-emoji"
 	goldmarkExtension "github.com/yuin/goldmark/extension"
@@ -34,7 +35,6 @@ import (
 var (
 	AppName = "notes"
 	Version string
-	JiraRe  = regexp.MustCompile(`((\s+)((DEV|INT)-\d+))`)
 
 	indexTemplate *template.Template
 )
@@ -145,13 +145,13 @@ func indexHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	}
 }
 
-func noteSubmitHandler(w http.ResponseWriter, r *http.Request, db *sql.DB, mdParser goldmark.Markdown, mdFn func(string) string) {
+func noteSubmitHandler(w http.ResponseWriter, r *http.Request, db *sql.DB, mdParser goldmark.Markdown) {
 	err := r.ParseForm()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	mdNote := mdFn(r.FormValue("note"))
+	mdNote := r.FormValue("note")
 
 	buf := bytes.NewBuffer(nil)
 	err = mdParser.Convert([]byte(mdNote), buf)
@@ -202,7 +202,7 @@ func noteEditHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	}
 }
 
-func noteUpdateHandler(w http.ResponseWriter, r *http.Request, db *sql.DB, mdParser goldmark.Markdown, mdFn func(string) string) {
+func noteUpdateHandler(w http.ResponseWriter, r *http.Request, db *sql.DB, mdParser goldmark.Markdown) {
 	noteID, err := strconv.Atoi(chi.URLParam(r, "noteID"))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -214,7 +214,7 @@ func noteUpdateHandler(w http.ResponseWriter, r *http.Request, db *sql.DB, mdPar
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	mdNote := mdFn(r.FormValue("note"))
+	mdNote := r.FormValue("note")
 
 	buf := bytes.NewBuffer(nil)
 	err = mdParser.Convert([]byte(mdNote), buf)
@@ -318,10 +318,18 @@ func noteSearchHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	}
 }
 
-func run(dbPassword, httpAddr, jiraRootURL string) error {
+func runAction(c *cli.Context) error {
+	dbPassphrase := strings.TrimSpace(c.String("database-passphrase"))
+	if dbPassphrase == "" {
+		return fmt.Errorf("required database passphrase is empty")
+	}
+	return run(c.Context, dbPassphrase, c.String("listen-addr"))
+}
+
+func run(ctx context.Context, dbPassphrase, httpAddr string) error {
 	indexTemplate = template.Must(template.New("").Parse(Embeds.FileString("views/index.gohtml")))
 
-	dbURI := fmt.Sprintf("file:notes.db?_pragma_key=%s&_pragma_cipher_page_size=4096&_foreign_keys=1", url.QueryEscape(dbPassword))
+	dbURI := fmt.Sprintf("file:notes.db?_pragma_key=%s&_pragma_cipher_page_size=4096&_foreign_keys=1", url.QueryEscape(dbPassphrase))
 	db, err := sql.Open("sqlite3", dbURI)
 	if err != nil {
 		return err
@@ -346,25 +354,19 @@ func run(dbPassword, httpAddr, jiraRootURL string) error {
 
 	mdParser := goldmark.New(goldmark.WithExtensions(goldmarkExtension.GFM, goldmarkEmoji.Emoji))
 
-	linkifyTickets := func(md string) string {
-		// link all tickets
-		// TODO: maybe use a Goldmark extension for htis?
-		return JiraRe.ReplaceAllString(md, `$2[$3](`+jiraRootURL+`$3)`)
-	}
-
 	r := chi.NewRouter()
-	r.Use(middleware.Logger)
+	r.Use(middleware.Recoverer, middleware.Logger, middleware.Compress(5))
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		indexHandler(w, r, db)
 	})
 	r.Post("/submit", func(w http.ResponseWriter, r *http.Request) {
-		noteSubmitHandler(w, r, db, mdParser, linkifyTickets)
+		noteSubmitHandler(w, r, db, mdParser)
 	})
 	r.Get("/note/{noteID}/edit", func(w http.ResponseWriter, r *http.Request) {
 		noteEditHandler(w, r, db)
 	})
 	r.Post("/note/{noteID}/update", func(w http.ResponseWriter, r *http.Request) {
-		noteUpdateHandler(w, r, db, mdParser, linkifyTickets)
+		noteUpdateHandler(w, r, db, mdParser)
 	})
 	r.Get("/search", func(w http.ResponseWriter, r *http.Request) {
 		noteSearchHandler(w, r, db)
@@ -391,11 +393,25 @@ func run(dbPassword, httpAddr, jiraRootURL string) error {
 }
 
 func main() {
-	if len(os.Args) != 4 {
-		log.Fatalf("Usage: %s <database-password> <http-listen-addr> <jira-root-url>", os.Args[0])
+	app := cli.App{
+		Name:    AppName,
+		Version: Version,
+		Action:  runAction,
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:     "database-passphrase",
+				Usage:    "SQLcipher database passphrase",
+				EnvVars:  []string{"DATABASE_PASSPHRASE"},
+				Required: true,
+			},
+			&cli.StringFlag{
+				Name:  "listen-addr",
+				Usage: "HTTP listen address",
+				Value: "localhost:3333",
+			},
+		},
 	}
-
-	err := run(os.Args[1], os.Args[2], os.Args[3])
+	err := app.Run(os.Args)
 	if err != nil {
 		log.Fatal(err)
 	}
