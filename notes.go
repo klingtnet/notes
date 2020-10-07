@@ -46,7 +46,7 @@ type TemplateData struct {
 	Footer TemplateFooterData
 }
 
-type Note struct {
+type NoteRecord struct {
 	ID int64
 	DateCreated,
 	DateUpdated time.Time
@@ -61,7 +61,7 @@ type TemplateMainData struct {
 	Heading,
 	EditText,
 	SubmitAction string
-	NotesByDay map[time.Time][]Note
+	NotesByDay map[time.Time][]NoteRecord
 	Days       []time.Time
 }
 
@@ -79,7 +79,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	}
 	defer rows.Close()
 
-	var notes []Note
+	var notes []NoteRecord
 	for rows.Next() {
 		var (
 			id                       int64
@@ -107,7 +107,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 			}
 		}
 
-		notes = append(notes, Note{ID: id, HTML: template.HTML(noteHTML), DateCreated: dateCreated, DateUpdated: dateUpdated})
+		notes = append(notes, NoteRecord{ID: id, HTML: template.HTML(noteHTML), DateCreated: dateCreated, DateUpdated: dateUpdated})
 	}
 	err = rows.Err()
 	if err != nil {
@@ -115,7 +115,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		return
 	}
 
-	notesByDay := make(map[time.Time][]Note)
+	notesByDay := make(map[time.Time][]NoteRecord)
 	for _, note := range notes {
 		date, _ := time.Parse("2006-01-02", note.DateCreated.Format("2006-01-02"))
 		notesByDay[date] = append(notesByDay[date], note)
@@ -251,7 +251,7 @@ func noteSearchHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	}
 	defer rows.Close()
 
-	var notes []Note
+	var notes []NoteRecord
 	for rows.Next() {
 		var (
 			id                       int64
@@ -279,7 +279,7 @@ func noteSearchHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 			}
 		}
 
-		notes = append(notes, Note{ID: id, HTML: template.HTML(noteHTML), DateCreated: dateCreated, DateUpdated: dateUpdated})
+		notes = append(notes, NoteRecord{ID: id, HTML: template.HTML(noteHTML), DateCreated: dateCreated, DateUpdated: dateUpdated})
 	}
 	err = rows.Err()
 	if err != nil {
@@ -287,7 +287,7 @@ func noteSearchHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		return
 	}
 
-	notesByDay := make(map[time.Time][]Note)
+	notesByDay := make(map[time.Time][]NoteRecord)
 	for idx := range notes {
 		note := notes[len(notes)-1-idx]
 		date, _ := time.Parse("2006-01-02", note.DateCreated.Format("2006-01-02"))
