@@ -32,9 +32,12 @@ import (
 	goldmarkExtension "github.com/yuin/goldmark/extension"
 )
 
+// AppName is the name of the application.
+const AppName = "notes"
+
 var (
-	AppName = "notes"
-	Version string
+	// Version is the build version set by make.
+	Version = "unset"
 
 	indexTemplate,
 	errorTemplate *template.Template
@@ -349,11 +352,33 @@ func noteSearchHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	respondWithTemplate(w, r, indexTemplate, td)
 }
 
+func assetHandler(w http.ResponseWriter, r *http.Request) {
+	file := strings.TrimPrefix(r.URL.Path, "/")
+	data := Embeds.File(file)
+	if data == nil {
+		http.Error(w, "asset not found", http.StatusNotFound)
+		return
+	}
+	contentType := mime.TypeByExtension(filepath.Ext(file))
+	if contentType == "" {
+		contentType = http.DetectContentType(data)
+	}
+	w.Header().Add("content-type", contentType)
+	_, err := w.Write(data)
+	if err != nil {
+		log.Println(err)
+	}
+}
+
 func runAction(c *cli.Context) error {
 	dbPassphrase := strings.TrimSpace(c.String("database-passphrase"))
 	if dbPassphrase == "" {
 		return fmt.Errorf("required database passphrase is empty")
 	}
+
+	indexTemplate = parseTemplate("views/layouts/base.gohtml", "views/index.gohtml")
+	errorTemplate = parseTemplate("views/layouts/base.gohtml", "views/error.gohtml")
+
 	return run(c.Context, dbPassphrase, c.String("listen-addr"))
 }
 
@@ -364,9 +389,6 @@ func parseTemplate(layout, content string) *template.Template {
 }
 
 func run(ctx context.Context, dbPassphrase, httpAddr string) error {
-	indexTemplate = parseTemplate("views/layouts/base.gohtml", "views/index.gohtml")
-	errorTemplate = parseTemplate("views/layouts/base.gohtml", "views/error.gohtml")
-
 	dbURI := fmt.Sprintf("file:notes.db?_pragma_key=%s&_pragma_cipher_page_size=4096&_foreign_keys=1", url.QueryEscape(dbPassphrase))
 	db, err := sql.Open("sqlite3", dbURI)
 	if err != nil {
@@ -409,25 +431,10 @@ func run(ctx context.Context, dbPassphrase, httpAddr string) error {
 	r.Get("/search", func(w http.ResponseWriter, r *http.Request) {
 		noteSearchHandler(w, r, db)
 	})
-	r.Get("/assets/*", func(w http.ResponseWriter, r *http.Request) {
-		file := strings.TrimPrefix(r.URL.Path, "/")
-		data := Embeds.File(file)
-		if data == nil {
-			respondWithErrorPage(w, r, fmt.Errorf("could not find %q", file), "", http.StatusNotFound)
-			return
-		}
-		contentType := mime.TypeByExtension(filepath.Ext(file))
-		if contentType == "" {
-			contentType = http.DetectContentType(data)
-		}
-		w.Header().Add("content-type", contentType)
-		w.Write(data)
-	})
+	r.Get("/assets/*", assetHandler)
 
 	log.Printf("listening on %q", httpAddr)
-	http.ListenAndServe(httpAddr, r)
-
-	return nil
+	return http.ListenAndServe(httpAddr, r)
 }
 
 func main() {
