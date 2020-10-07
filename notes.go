@@ -36,7 +36,8 @@ var (
 	AppName = "notes"
 	Version string
 
-	indexTemplate *template.Template
+	indexTemplate,
+	errorTemplate *template.Template
 )
 
 type TemplateData struct {
@@ -58,11 +59,19 @@ type TemplateHeaderData struct {
 }
 
 type TemplateMainData struct {
-	Heading,
-	EditText,
-	SubmitAction string
+	Heading string
+	Content interface{}
+}
+
+type TemplateIndexContent struct {
 	NotesByDay map[time.Time][]NoteRecord
 	Days       []time.Time
+	EditText,
+	SubmitAction string
+}
+
+type TemplateErrorContent struct {
+	ErrorMessage string
 }
 
 type TemplateFooterData struct {
@@ -71,10 +80,48 @@ type TemplateFooterData struct {
 	RenderDate time.Time
 }
 
+func respondWithTemplate(w http.ResponseWriter, r *http.Request, tmpl *template.Template, data interface{}) {
+	buf := bytes.NewBuffer(nil)
+	err := tmpl.ExecuteTemplate(buf, "", data)
+	if err != nil {
+		respondWithErrorPage(w, r, err, "", http.StatusInternalServerError)
+		return
+	}
+	_, err = io.CopyN(w, buf, int64(buf.Len()))
+	if err != nil {
+		log.Println(err)
+	}
+}
+
+func respondWithErrorPage(w http.ResponseWriter, r *http.Request, err error, msg string, statusCode int) {
+	log.Println(err.Error())
+	if msg == "" {
+		msg = err.Error()
+	}
+	td := TemplateData{
+		Title:  "notes",
+		Header: TemplateHeaderData{Title: "notes"},
+		Main:   TemplateMainData{Heading: "something went wrong 😿", Content: TemplateErrorContent{ErrorMessage: msg}},
+		Footer: TemplateFooterData{Version: Version, AppName: AppName, RenderDate: time.Now()},
+	}
+
+	buf := bytes.NewBuffer(nil)
+	err = errorTemplate.ExecuteTemplate(buf, "", td)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(statusCode)
+	_, err = io.CopyN(w, buf, int64(buf.Len()))
+	if err != nil {
+		log.Println(err)
+	}
+}
+
 func indexHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	rows, err := db.QueryContext(r.Context(), `SELECT id, date_created, date_updated, html FROM note ORDER BY date_created DESC;`)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		respondWithErrorPage(w, r, err, "", http.StatusInternalServerError)
 		return
 	}
 	defer rows.Close()
@@ -88,13 +135,13 @@ func indexHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		)
 		err = rows.Scan(&id, &rawDateCreated, &rawDateUpdated, &noteHTML)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			respondWithErrorPage(w, r, err, "", http.StatusInternalServerError)
 			return
 		}
 
 		dateCreated, err := time.Parse(time.RFC3339, rawDateCreated)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			respondWithErrorPage(w, r, err, "", http.StatusInternalServerError)
 			return
 		}
 
@@ -102,7 +149,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		if rawDateUpdated != nil {
 			dateUpdated, err = time.Parse(time.RFC3339, *rawDateUpdated)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
+				respondWithErrorPage(w, r, err, "", http.StatusInternalServerError)
 				return
 			}
 		}
@@ -111,7 +158,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	}
 	err = rows.Err()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		respondWithErrorPage(w, r, err, "", http.StatusInternalServerError)
 		return
 	}
 
@@ -129,26 +176,21 @@ func indexHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	td := TemplateData{
 		Title:  "notes",
 		Header: TemplateHeaderData{Title: "notes"},
-		Main:   TemplateMainData{NotesByDay: notesByDay, Days: days, SubmitAction: "/submit"},
+		Main: TemplateMainData{Heading: "notes", Content: TemplateIndexContent{
+			NotesByDay:   notesByDay,
+			Days:         days,
+			SubmitAction: "/submit",
+		}},
 		Footer: TemplateFooterData{Version: Version, AppName: AppName, RenderDate: time.Now()},
 	}
 
-	buf := bytes.NewBuffer(nil)
-	err = indexTemplate.ExecuteTemplate(buf, "", td)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	_, err = io.CopyN(w, buf, int64(buf.Len()))
-	if err != nil {
-		log.Println(err)
-	}
+	respondWithTemplate(w, r, indexTemplate, td)
 }
 
 func noteSubmitHandler(w http.ResponseWriter, r *http.Request, db *sql.DB, mdParser goldmark.Markdown) {
 	err := r.ParseForm()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		respondWithErrorPage(w, r, err, "", http.StatusBadRequest)
 		return
 	}
 	mdNote := r.FormValue("note")
@@ -156,13 +198,13 @@ func noteSubmitHandler(w http.ResponseWriter, r *http.Request, db *sql.DB, mdPar
 	buf := bytes.NewBuffer(nil)
 	err = mdParser.Convert([]byte(mdNote), buf)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		respondWithErrorPage(w, r, err, "", http.StatusBadRequest)
 		return
 	}
 
 	_, err = db.ExecContext(r.Context(), `INSERT INTO note(date_created, markdown, html) VALUES(?,?,?)`, time.Now().Format(time.RFC3339), mdNote, buf.String())
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		respondWithErrorPage(w, r, err, "", http.StatusInternalServerError)
 		return
 	}
 
@@ -172,46 +214,40 @@ func noteSubmitHandler(w http.ResponseWriter, r *http.Request, db *sql.DB, mdPar
 func noteEditHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	noteID, err := strconv.Atoi(chi.URLParam(r, "noteID"))
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		respondWithErrorPage(w, r, err, "", http.StatusBadRequest)
 		return
 	}
 
 	var md string
 	err = db.QueryRowContext(r.Context(), `SELECT markdown FROM note WHERE id = ?`, noteID).Scan(&md)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		respondWithErrorPage(w, r, err, "", http.StatusInternalServerError)
 		return
 	}
 
 	td := TemplateData{
 		Title:  "notes",
 		Header: TemplateHeaderData{Title: "notes"},
-		Main:   TemplateMainData{EditText: md, SubmitAction: fmt.Sprintf("/note/%d/update", noteID)},
+		Main: TemplateMainData{Heading: "notes", Content: TemplateIndexContent{
+			SubmitAction: fmt.Sprintf("/note/%d/update", noteID),
+			EditText:     md,
+		}},
 		Footer: TemplateFooterData{Version: Version, AppName: AppName, RenderDate: time.Now()},
 	}
 
-	buf := bytes.NewBuffer(nil)
-	err = indexTemplate.ExecuteTemplate(buf, "", td)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	_, err = io.CopyN(w, buf, int64(buf.Len()))
-	if err != nil {
-		log.Println(err)
-	}
+	respondWithTemplate(w, r, indexTemplate, td)
 }
 
 func noteUpdateHandler(w http.ResponseWriter, r *http.Request, db *sql.DB, mdParser goldmark.Markdown) {
 	noteID, err := strconv.Atoi(chi.URLParam(r, "noteID"))
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		respondWithErrorPage(w, r, err, "", http.StatusBadRequest)
 		return
 	}
 
 	err = r.ParseForm()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		respondWithErrorPage(w, r, err, "", http.StatusBadRequest)
 		return
 	}
 	mdNote := r.FormValue("note")
@@ -219,13 +255,13 @@ func noteUpdateHandler(w http.ResponseWriter, r *http.Request, db *sql.DB, mdPar
 	buf := bytes.NewBuffer(nil)
 	err = mdParser.Convert([]byte(mdNote), buf)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		respondWithErrorPage(w, r, err, "", http.StatusBadRequest)
 		return
 	}
 
 	_, err = db.ExecContext(r.Context(), `UPDATE note SET markdown=?, html=?, date_updated=? WHERE id=?;`, mdNote, buf.String(), time.Now().Format(time.RFC3339), noteID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		respondWithErrorPage(w, r, err, "", http.StatusInternalServerError)
 		return
 	}
 
@@ -235,18 +271,18 @@ func noteUpdateHandler(w http.ResponseWriter, r *http.Request, db *sql.DB, mdPar
 func noteSearchHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	err := r.ParseForm()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		respondWithErrorPage(w, r, err, "", http.StatusBadRequest)
 		return
 	}
 	pattern := r.FormValue("search-pattern")
 	if strings.TrimSpace(pattern) == "" {
-		http.Error(w, "search-pattern is missing", http.StatusBadRequest)
+		respondWithErrorPage(w, r, fmt.Errorf("search-pattern is missing"), "", http.StatusBadRequest)
 		return
 	}
 
 	rows, err := db.QueryContext(r.Context(), `SELECT id, date_created, date_updated, html FROM note WHERE id IN (SELECT id FROM note_fts WHERE markdown MATCH ?);`, pattern)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		respondWithErrorPage(w, r, err, "", http.StatusInternalServerError)
 		return
 	}
 	defer rows.Close()
@@ -260,13 +296,13 @@ func noteSearchHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		)
 		err = rows.Scan(&id, &rawDateCreated, &rawDateUpdated, &noteHTML)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			respondWithErrorPage(w, r, err, "", http.StatusInternalServerError)
 			return
 		}
 
 		dateCreated, err := time.Parse(time.RFC3339, rawDateCreated)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			respondWithErrorPage(w, r, err, "", http.StatusInternalServerError)
 			return
 		}
 
@@ -274,7 +310,7 @@ func noteSearchHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		if rawDateUpdated != nil {
 			dateUpdated, err = time.Parse(time.RFC3339, *rawDateUpdated)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
+				respondWithErrorPage(w, r, err, "", http.StatusInternalServerError)
 				return
 			}
 		}
@@ -283,7 +319,7 @@ func noteSearchHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	}
 	err = rows.Err()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		respondWithErrorPage(w, r, err, "", http.StatusInternalServerError)
 		return
 	}
 
@@ -302,20 +338,15 @@ func noteSearchHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	td := TemplateData{
 		Title:  "notes",
 		Header: TemplateHeaderData{Title: "notes"},
-		Main:   TemplateMainData{Heading: fmt.Sprintf("Search Resulst for %q", pattern), NotesByDay: notesByDay, Days: days, SubmitAction: "/submit"},
+		Main: TemplateMainData{Heading: fmt.Sprintf("Search Resulst for %q", pattern), Content: TemplateIndexContent{
+			NotesByDay:   notesByDay,
+			Days:         days,
+			SubmitAction: "/submit",
+		}},
 		Footer: TemplateFooterData{Version: Version, AppName: AppName, RenderDate: time.Now()},
 	}
 
-	buf := bytes.NewBuffer(nil)
-	err = indexTemplate.ExecuteTemplate(buf, "", td)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	_, err = io.CopyN(w, buf, int64(buf.Len()))
-	if err != nil {
-		log.Println(err)
-	}
+	respondWithTemplate(w, r, indexTemplate, td)
 }
 
 func runAction(c *cli.Context) error {
@@ -326,8 +357,15 @@ func runAction(c *cli.Context) error {
 	return run(c.Context, dbPassphrase, c.String("listen-addr"))
 }
 
+func parseTemplate(layout, content string) *template.Template {
+	t := template.New("")
+	t = template.Must(t.Parse(Embeds.FileString(content)))
+	return template.Must(t.Parse(Embeds.FileString(layout)))
+}
+
 func run(ctx context.Context, dbPassphrase, httpAddr string) error {
-	indexTemplate = template.Must(template.New("").Parse(Embeds.FileString("views/index.gohtml")))
+	indexTemplate = parseTemplate("views/layouts/base.gohtml", "views/index.gohtml")
+	errorTemplate = parseTemplate("views/layouts/base.gohtml", "views/error.gohtml")
 
 	dbURI := fmt.Sprintf("file:notes.db?_pragma_key=%s&_pragma_cipher_page_size=4096&_foreign_keys=1", url.QueryEscape(dbPassphrase))
 	db, err := sql.Open("sqlite3", dbURI)
@@ -375,7 +413,7 @@ func run(ctx context.Context, dbPassphrase, httpAddr string) error {
 		file := strings.TrimPrefix(r.URL.Path, "/")
 		data := Embeds.File(file)
 		if data == nil {
-			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+			respondWithErrorPage(w, r, fmt.Errorf("could not find %q", file), "", http.StatusNotFound)
 			return
 		}
 		contentType := mime.TypeByExtension(filepath.Ext(file))
