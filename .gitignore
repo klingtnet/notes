@@ -1,6 +1,5 @@
-/tasker
-/tasker.db
-/tasker-*.db.gz
+/notes
+/notes.db
+/notes-*.db.gz
 /.env
-/internal/statik
 

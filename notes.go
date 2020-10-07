@@ -32,7 +32,7 @@ import (
 )
 
 var (
-	AppName = "tasker"
+	AppName = "notes"
 	Version string
 	JiraRe  = regexp.MustCompile(`((\s+)((DEV|INT)-\d+))`)
 
@@ -127,8 +127,8 @@ func indexHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	sort.Slice(days, func(i, j int) bool { return days[i].After(days[j]) })
 
 	td := TemplateData{
-		Title:  "tasker",
-		Header: TemplateHeaderData{Title: "tasker"},
+		Title:  "notes",
+		Header: TemplateHeaderData{Title: "notes"},
 		Main:   TemplateMainData{NotesByDay: notesByDay, Days: days, SubmitAction: "/submit"},
 		Footer: TemplateFooterData{Version: Version, AppName: AppName, RenderDate: time.Now()},
 	}
@@ -184,8 +184,8 @@ func noteEditHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	}
 
 	td := TemplateData{
-		Title:  "tasker",
-		Header: TemplateHeaderData{Title: "tasker"},
+		Title:  "notes",
+		Header: TemplateHeaderData{Title: "notes"},
 		Main:   TemplateMainData{EditText: md, SubmitAction: fmt.Sprintf("/note/%d/update", noteID)},
 		Footer: TemplateFooterData{Version: Version, AppName: AppName, RenderDate: time.Now()},
 	}
@@ -300,8 +300,8 @@ func noteSearchHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	sort.Slice(days, func(i, j int) bool { return days[i].After(days[j]) })
 
 	td := TemplateData{
-		Title:  "tasker",
-		Header: TemplateHeaderData{Title: "tasker"},
+		Title:  "notes",
+		Header: TemplateHeaderData{Title: "notes"},
 		Main:   TemplateMainData{Heading: fmt.Sprintf("Search Resulst for %q", pattern), NotesByDay: notesByDay, Days: days, SubmitAction: "/submit"},
 		Footer: TemplateFooterData{Version: Version, AppName: AppName, RenderDate: time.Now()},
 	}
@@ -321,7 +321,7 @@ func noteSearchHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 func run(dbPassword, httpAddr, jiraRootURL string) error {
 	indexTemplate = template.Must(template.New("").Parse(Embeds.FileString("views/index.gohtml")))
 
-	dbURI := fmt.Sprintf("file:tasker.db?_pragma_key=%s&_pragma_cipher_page_size=4096&_foreign_keys=1", url.QueryEscape(dbPassword))
+	dbURI := fmt.Sprintf("file:notes.db?_pragma_key=%s&_pragma_cipher_page_size=4096&_foreign_keys=1", url.QueryEscape(dbPassword))
 	db, err := sql.Open("sqlite3", dbURI)
 	if err != nil {
 		return err

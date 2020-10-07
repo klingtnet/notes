@@ -1,4 +1,4 @@
-module github.com/klingtnet/tasker
+module github.com/klingtnet/notes
 
 go 1.15
 

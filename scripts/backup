@@ -2,6 +2,6 @@
 
 set -euo pipefail
 
-BACKUP_FILE="tasker-$(date --rfc-3339=date).db.gz"
-pigz tasker.db -c > $BACKUP_FILE
+BACKUP_FILE="notes-$(date --rfc-3339=date).db.gz"
+pigz notes.db -c > $BACKUP_FILE
 
