@@ -341,7 +341,7 @@ func noteSearchHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	td := TemplateData{
 		Title:  "notes",
 		Header: TemplateHeaderData{Title: "notes"},
-		Main: TemplateMainData{Heading: fmt.Sprintf("Search Resulst for %q", pattern), Content: TemplateIndexContent{
+		Main: TemplateMainData{Heading: fmt.Sprintf("Search Results for %q", pattern), Content: TemplateIndexContent{
 			NotesByDay:   notesByDay,
 			Days:         days,
 			SubmitAction: "/submit",
