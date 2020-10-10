@@ -1,30 +1,145 @@
-div.note-form {
-  display: flex;
-  flex-flow: column;
+:root {
+  --border-radius: 5px;
+  --border: 1px solid black;
+  /* color scheme was designed using colormind.io */
+  --primary: #217c8f;
+  --secondary: #c29260;
+  --highlight: #ae494a;
+  --background-color: white;
+  --dimmed: #c6dabe;
+  --light-bg: #f0f0f0;
 }
 
-textarea#note {
-  font-family: monospace;
+body {
+  font-family: Cantarell, sans;
+  line-height: 1.6em;
+  margin: 0;
 }
 
-div.content {
-  padding-left: 2rem;
+header,
+footer {
+  padding: 2em;
+  background-color: var(--light-bg);
 }
 
-span.version {
-  font-family: monospace;
-  font-size: large;
+nav > h1 {
+  font-weight: bold;
+  display: inline;
+  margin-right: 2em;
+  text-transform: uppercase;
 }
 
-time.updated {
-  padding: 0.1rem 0.3rem;
-  border-radius: 0.1rem;
+nav > ul {
+  list-style: none;
+  display: inline-flex;
+  padding: 0;
+  margin: 0;
+}
+
+nav > ul > li > a {
   font-weight: bold;
 }
 
-footer > ul.footer {
+nav > form {
+  display: inline;
+  float: right;
+}
+
+input#search-pattern {
+  border-radius: var(--border-radius);
+  border: var(--border);
+  padding: 0.5em 2em;
+}
+
+textarea#note {
+  border-radius: var(--border-radius);
+  border: var(--border);
+  padding: 2em;
+  font-family: monospace;
+  width: 100%;
+  height: 12ch;
+  transition: ease-out 0.3s;
+}
+
+textarea#note:focus {
+  box-shadow: 0 0 0 100vw #000000cc;
+  height: 30ch;
+  transition: ease-in 0.3s;
+}
+
+button {
+  border-radius: var(--border-radius);
+  border: var(--border);
+  border-color: var(--primary);
+  background-color: var(--primary);
+  color: white;
+  padding: 0.5em 2em;
+  text-transform: uppercase;
+  transition: ease-out 0.3s;
+}
+
+button:hover {
+  background-color: var(--highlight);
+  transition: ease-in 0.3s;
+}
+
+a {
+  text-decoration: none;
+  word-break: break-word;
+  color: var(--primary);
+}
+
+a:hover {
+  color: var(--secondary);
+  transition: ease-in 0.3s;
+}
+
+main {
+  width: min(72ch, 100%);
+  margin: 4em auto;
+}
+
+main > h2 {
+  text-align: center;
+  margin-top: 2em;
+}
+
+form.note-edit {
+  margin: 2em 1em 3em;
+}
+
+article {
+  margin: 2em 0;
+}
+
+article > div.content {
+  margin-left: 2em;
+}
+
+div.article-headline > h3 {
+  display: inline;
+}
+
+span.last-update {
+  color: var(--dimmed);
+  transition: ease-in 0.3s;
+  float: right;
+}
+
+span.last-update:hover {
+  color: black;
+  transition: ease-in 0.3s;
+}
+
+var {
+  font-family: monospace;
+}
+
+footer > ul {
   list-style: none;
-  display: grid;
-  color: var(--color-text-secondary);
-  grid-auto-flow: column;
+  display: inline-flex;
+  justify-content: space-around;
+  padding: 0;
+  margin: 0;
+  width: 100%;
 }

@@ -1,20 +1,18 @@
 {{ define "content" }}
-<form method="GET" action="/search">
-  <label for="search-pattern">Search:</label>
-  <input type="search" minlength=3 id="search-pattern" name="search-pattern">
-</form>
-<form method="POST" action="{{ .SubmitAction }}">
-  <div class="note-form">
-    <textarea id="note" name="note" rows=6 cols=80>{{ .EditText }}</textarea>
-    <button type="submit">Submit</button>
-  </div>
+<form class="note-edit" method="POST" action="{{ .SubmitAction }}">
+  <textarea id="note" name="note">{{ .EditText }}</textarea>
+  <button type="submit">Submit</button>
 </form>
 {{ range $day := .Days }}
   <h2><time datetime='{{ $day.Format "2006-01-02T15:04:05.000-0700" }}'>{{ $day.Format "Monday, 02-Jan-2006" }}</time></h2>
   {{ range $_, $note := (index $.NotesByDay $day) }}
   <article>
-    <h3><time>{{ $note.DateCreated.Format "15:04" }}</time> (<a href="/note/{{ $note.ID }}/edit">edit</a>)</h3>
-    {{ if not $note.DateUpdated.IsZero }}Last update <time class="updated" datetime='{{ $note.DateUpdated.Format "2006-01-02T15:04:05.000-0700" }}'>{{ $note.DateUpdated.Format "15:04" }}</time>{{ end }}
+    <div class="article-headline">
+      <h3><time>{{ $note.DateCreated.Format "15:04" }}</time></h3> <a class="edit" href="/note/{{ $note.ID }}/edit">✏️</a>
+      {{ if not $note.DateUpdated.IsZero }}
+      <span class="last-update">Last update <time class="updated" datetime='{{ $note.DateUpdated.Format "2006-01-02T15:04:05.000-0700" }}'>{{ $note.DateUpdated.Format "15:04" }}</time></span>
+      {{ end }}
+    </div>
     <div class="content">
     {{ $note.HTML }}
     </div>

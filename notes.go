@@ -179,7 +179,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	td := TemplateData{
 		Title:  "notes",
 		Header: TemplateHeaderData{Title: "notes"},
-		Main: TemplateMainData{Heading: "notes", Content: TemplateIndexContent{
+		Main: TemplateMainData{Heading: "What do you want to remember?", Content: TemplateIndexContent{
 			NotesByDay:   notesByDay,
 			Days:         days,
 			SubmitAction: "/submit",

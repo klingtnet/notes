@@ -1,16 +1,21 @@
 {{ define "header" }}
 <nav>
+  <h1>Tasker</h1>
   <ul>
     <li><a href="/">Home /</a></li>
   </ul>
+  <form class="nav-search" method="GET" action="/search">
+    <label for="search-pattern">Search:</label>
+    <input type="search" minlength=3 id="search-pattern" name="search-pattern">
+    {{/* <button type="submit">Search</button> */}}
+  </form>
 </nav>
-<h1>Tasker</h1>
 {{ end }}
 
 {{ define "footer" }}
 <ul class="footer">
   <li>{{ .AppName }}</li>
-  <li>Version: <span class="version">{{ .Version }}</span></li>
+  <li>Version: <var>{{ .Version }}</var></li>
   <li>rendered at <time datetime='{{ .RenderDate.Format "2006-01-02T15:04:05.000-0700" }}'>{{ .RenderDate.Format "2006-01-02T15:04" }}</time></li>
 </ul>
 {{ end }}
@@ -29,7 +34,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" href="/assets/favicon.svg">
   <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.2/styles/default.min.css">
-  <link rel="stylesheet" href="https://unpkg.com/mvp.css">
   <link rel="stylesheet" href="/assets/base.css">
   <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.2/styles/default.min.css">
   <script defer src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.2/highlight.min.js"></script>
