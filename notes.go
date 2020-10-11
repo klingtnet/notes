@@ -58,6 +58,7 @@ type NoteRecord struct {
 }
 
 type TemplateHeaderData struct {
+	AppName,
 	Title string
 }
 
@@ -103,7 +104,7 @@ func respondWithErrorPage(w http.ResponseWriter, err error, msg string, statusCo
 	}
 	td := TemplateData{
 		Title:  "notes",
-		Header: TemplateHeaderData{Title: "notes"},
+		Header: TemplateHeaderData{AppName: AppName, Title: "notes"},
 		Main:   TemplateMainData{Heading: "something went wrong 😿", Content: TemplateErrorContent{ErrorMessage: msg}},
 		Footer: TemplateFooterData{Version: Version, AppName: AppName, RenderDate: time.Now()},
 	}
@@ -178,7 +179,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 
 	td := TemplateData{
 		Title:  "notes",
-		Header: TemplateHeaderData{Title: "notes"},
+		Header: TemplateHeaderData{AppName: AppName, Title: "notes"},
 		Main: TemplateMainData{Heading: "What do you want to remember?", Content: TemplateIndexContent{
 			NotesByDay:   notesByDay,
 			Days:         days,
@@ -230,7 +231,7 @@ func noteEditHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 
 	td := TemplateData{
 		Title:  "notes",
-		Header: TemplateHeaderData{Title: "notes"},
+		Header: TemplateHeaderData{AppName: AppName, Title: "notes"},
 		Main: TemplateMainData{Heading: "notes", Content: TemplateIndexContent{
 			SubmitAction: fmt.Sprintf("/note/%d/update", noteID),
 			EditText:     md,
@@ -340,7 +341,7 @@ func noteSearchHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 
 	td := TemplateData{
 		Title:  "notes",
-		Header: TemplateHeaderData{Title: "notes"},
+		Header: TemplateHeaderData{AppName: AppName, Title: "notes"},
 		Main: TemplateMainData{Heading: fmt.Sprintf("Search Results for %q", pattern), Content: TemplateIndexContent{
 			NotesByDay:   notesByDay,
 			Days:         days,
