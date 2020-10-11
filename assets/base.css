@@ -105,6 +105,10 @@ button:hover {
   transition: ease-in 0.3s;
 }
 
+form.note-edit > button[type="submit"] {
+  margin: 1em 0;
+}
+
 a {
   text-decoration: none;
   word-break: break-word;
