@@ -8,12 +8,29 @@
   --background-color: white;
   --dimmed: #c6dabe;
   --light-bg: #f0f0f0;
+  --font-color: black;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --border: 1px solid white;
+    /* color scheme was designed using colormind.io */
+    --primary: #217c8f;
+    --secondary: #c29260;
+    --highlight: #ae494a;
+    --background-color: #212121;
+    --dimmed: #333731;
+    --light-bg: #303030;
+    --font-color: white;
+  }
 }
 
 body {
   font-family: Cantarell, sans;
   line-height: 1.6em;
   margin: 0;
+  color: var(--font-color);
+  background-color: var(--background-color);
 }
 
 header,
@@ -49,6 +66,8 @@ input#search-pattern {
   border-radius: var(--border-radius);
   border: var(--border);
   padding: 0.5em 2em;
+  color: var(--font-color);
+  background-color: var(--light-bg);
 }
 
 textarea#note {
@@ -59,6 +78,8 @@ textarea#note {
   width: 100%;
   height: 12ch;
   transition: ease-out 0.3s;
+  color: var(--font-color);
+  background-color: var(--light-bg);
 }
 
 textarea#note:focus {
@@ -127,7 +148,7 @@ span.last-update {
 }
 
 span.last-update:hover {
-  color: black;
+  color: var(--font-color);
   transition: ease-in 0.3s;
 }
 
