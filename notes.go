@@ -40,6 +40,7 @@ var (
 	Version = "unset"
 
 	indexTemplate,
+	deleteTemplate,
 	errorTemplate *template.Template
 )
 
@@ -272,6 +273,63 @@ func noteUpdateHandler(w http.ResponseWriter, r *http.Request, db *sql.DB, mdPar
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
+func noteDeleteHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
+	noteID, err := strconv.Atoi(chi.URLParam(r, "noteID"))
+	if err != nil {
+		respondWithErrorPage(w, err, "", http.StatusBadRequest)
+		return
+	}
+
+	switch r.Method {
+	case "GET":
+		td := TemplateData{
+			Title:  "notes",
+			Header: TemplateHeaderData{AppName: AppName, Title: "notes"},
+			Main: TemplateMainData{Heading: "Confirm Delete", Content: struct {
+				NoteID    int
+				DeleteURL string
+			}{noteID, r.URL.Path}},
+			Footer: TemplateFooterData{Version: Version, AppName: AppName, RenderDate: time.Now()},
+		}
+
+		respondWithTemplate(w, r, deleteTemplate, td)
+		return
+	case "POST":
+		err = r.ParseForm()
+		if err != nil {
+			respondWithErrorPage(w, err, "", http.StatusBadRequest)
+			return
+		}
+
+		switch r.FormValue("submit") {
+		case "cancel":
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		case "delete":
+			res, err := db.ExecContext(r.Context(), `DELETE FROM note WHERE id = ?`, noteID)
+			if err != nil {
+				respondWithErrorPage(w, err, "", http.StatusInternalServerError)
+				return
+			}
+			n, err := res.RowsAffected()
+			if err != nil {
+				respondWithErrorPage(w, err, "", http.StatusInternalServerError)
+				return
+			}
+			if n != 1 {
+				respondWithErrorPage(w, fmt.Errorf("expected to delete one row but was %d", n), "", http.StatusInternalServerError)
+				return
+			}
+
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+
+		respondWithErrorPage(w, fmt.Errorf("unknown submit value %q", r.FormValue("submit")), "", http.StatusBadRequest)
+		return
+	}
+}
+
 func noteSearchHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	err := r.ParseForm()
 	if err != nil {
@@ -378,6 +436,7 @@ func runAction(c *cli.Context) error {
 	}
 
 	indexTemplate = parseTemplate("views/layouts/base.gohtml", "views/index.gohtml")
+	deleteTemplate = parseTemplate("views/layouts/base.gohtml", "views/delete.gohtml")
 	errorTemplate = parseTemplate("views/layouts/base.gohtml", "views/error.gohtml")
 
 	return run(c.Context, dbPassphrase, c.String("listen-addr"))
@@ -425,6 +484,10 @@ func run(ctx context.Context, dbPassphrase, httpAddr string) error {
 	})
 	r.Get("/note/{noteID}/edit", func(w http.ResponseWriter, r *http.Request) {
 		noteEditHandler(w, r, db)
+	})
+	r.Route("/note/{noteID}/delete", func(r chi.Router) {
+		r.Get("/", func(w http.ResponseWriter, r *http.Request) { noteDeleteHandler(w, r, db) })
+		r.Post("/", func(w http.ResponseWriter, r *http.Request) { noteDeleteHandler(w, r, db) })
 	})
 	r.Post("/note/{noteID}/update", func(w http.ResponseWriter, r *http.Request) {
 		noteUpdateHandler(w, r, db, mdParser)

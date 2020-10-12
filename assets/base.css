@@ -100,9 +100,21 @@ button {
   transition: ease-out 0.3s;
 }
 
+button.small {
+  padding: 0.1em 1em;
+}
+
 button:hover {
   background-color: var(--highlight);
   transition: ease-in 0.3s;
+}
+
+button[value="delete"] {
+  background-color: var(--highlight);
+}
+
+button[value="delete"]:hover {
+  background-color: red;
 }
 
 form.note-edit > button[type="submit"] {
