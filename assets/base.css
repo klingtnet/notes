@@ -85,7 +85,6 @@ textarea#note {
 
 textarea#note:focus {
   box-shadow: 0 0 0 100vw #000000cc;
-  height: 30ch;
   transition: ease-in 0.3s;
 }
 
