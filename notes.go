@@ -199,6 +199,10 @@ func noteSubmitHandler(w http.ResponseWriter, r *http.Request, db *sql.DB, mdPar
 		return
 	}
 	mdNote := r.FormValue("note")
+	if strings.TrimSpace(mdNote) == "" {
+		respondWithErrorPage(w, fmt.Errorf("note is empty"), "", http.StatusBadRequest)
+		return
+	}
 
 	buf := bytes.NewBuffer(nil)
 	err = mdParser.Convert([]byte(mdNote), buf)
