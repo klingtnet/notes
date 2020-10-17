@@ -18,6 +18,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
@@ -342,8 +343,22 @@ func noteSearchHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		respondWithErrorPage(w, fmt.Errorf("search-pattern is missing"), http.StatusBadRequest)
 		return
 	}
+	var containsOtherUnicode bool
+	for _, c := range pattern {
+		if unicode.In(c, unicode.Lo) {
+			containsOtherUnicode = true
+			break
+		}
+	}
 
-	rows, err := db.QueryContext(r.Context(), `SELECT id, date_created, date_updated, html FROM note WHERE id IN (SELECT id FROM note_fts WHERE markdown MATCH ?);`, pattern)
+	var rows *sql.Rows
+	if containsOtherUnicode {
+		// Use a LIKE query because the fts4 index has problems matching languages with implicit whitespace, e.g. japanese
+		rows, err = db.QueryContext(r.Context(), `SELECT id, date_created, date_updated, html FROM note WHERE markdown LIKE ?;`, "%"+pattern+"%")
+	} else {
+		rows, err = db.QueryContext(r.Context(), `SELECT id, date_created, date_updated, html FROM note WHERE id IN (SELECT id FROM note_fts WHERE markdown MATCH ?);`, pattern)
+	}
+
 	if err != nil {
 		respondWithErrorPage(w, err, http.StatusInternalServerError)
 		return
