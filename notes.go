@@ -235,7 +235,7 @@ func noteEditHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		Title:  "notes",
 		Header: TemplateHeaderData{AppName: AppName, Title: "notes"},
 		Main: TemplateMainData{Heading: "notes", Content: TemplateIndexContent{
-			SubmitAction: fmt.Sprintf("/note/%d/update", noteID),
+			SubmitAction: fmt.Sprintf("/note/%d/edit", noteID),
 			EditText:     md,
 		}},
 		Footer: TemplateFooterData{Version: Version, AppName: AppName, RenderDate: time.Now()},
@@ -483,15 +483,13 @@ func run(ctx context.Context, dbPassphrase, httpAddr string) error {
 	r.Post("/submit", func(w http.ResponseWriter, r *http.Request) {
 		noteSubmitHandler(w, r, db, mdParser)
 	})
-	r.Get("/note/{noteID}/edit", func(w http.ResponseWriter, r *http.Request) {
-		noteEditHandler(w, r, db)
+	r.Route("/note/{noteID}/edit", func(r chi.Router) {
+		r.Get("/", func(w http.ResponseWriter, r *http.Request) { noteEditHandler(w, r, db) })
+		r.Post("/", func(w http.ResponseWriter, r *http.Request) { noteUpdateHandler(w, r, db, mdParser) })
 	})
 	r.Route("/note/{noteID}/delete", func(r chi.Router) {
 		r.Get("/", func(w http.ResponseWriter, r *http.Request) { noteDeleteHandler(w, r, db) })
 		r.Post("/", func(w http.ResponseWriter, r *http.Request) { noteDeleteHandler(w, r, db) })
-	})
-	r.Post("/note/{noteID}/update", func(w http.ResponseWriter, r *http.Request) {
-		noteUpdateHandler(w, r, db, mdParser)
 	})
 	r.Get("/search", func(w http.ResponseWriter, r *http.Request) {
 		noteSearchHandler(w, r, db)
