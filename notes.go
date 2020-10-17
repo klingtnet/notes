@@ -89,7 +89,7 @@ func respondWithTemplate(w http.ResponseWriter, r *http.Request, tmpl *template.
 	buf := bytes.NewBuffer(nil)
 	err := tmpl.ExecuteTemplate(buf, "", data)
 	if err != nil {
-		respondWithErrorPage(w, err, "", http.StatusInternalServerError)
+		respondWithErrorPage(w, err, http.StatusInternalServerError)
 		return
 	}
 	_, err = io.CopyN(w, buf, int64(buf.Len()))
@@ -98,15 +98,12 @@ func respondWithTemplate(w http.ResponseWriter, r *http.Request, tmpl *template.
 	}
 }
 
-func respondWithErrorPage(w http.ResponseWriter, err error, msg string, statusCode int) {
+func respondWithErrorPage(w http.ResponseWriter, err error, statusCode int) {
 	log.Println(err.Error())
-	if msg == "" {
-		msg = err.Error()
-	}
 	td := TemplateData{
 		Title:  "notes",
 		Header: TemplateHeaderData{AppName: AppName, Title: "notes"},
-		Main:   TemplateMainData{Heading: "something went wrong 😿", Content: TemplateErrorContent{ErrorMessage: msg}},
+		Main:   TemplateMainData{Heading: "something went wrong 😿", Content: TemplateErrorContent{ErrorMessage: err.Error()}},
 		Footer: TemplateFooterData{Version: Version, AppName: AppName, RenderDate: time.Now()},
 	}
 
@@ -126,7 +123,7 @@ func respondWithErrorPage(w http.ResponseWriter, err error, msg string, statusCo
 func indexHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	rows, err := db.QueryContext(r.Context(), `SELECT id, date_created, date_updated, html FROM note ORDER BY date_created DESC;`)
 	if err != nil {
-		respondWithErrorPage(w, err, "", http.StatusInternalServerError)
+		respondWithErrorPage(w, err, http.StatusInternalServerError)
 		return
 	}
 	defer rows.Close()
@@ -140,13 +137,13 @@ func indexHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		)
 		err = rows.Scan(&id, &rawDateCreated, &rawDateUpdated, &noteHTML)
 		if err != nil {
-			respondWithErrorPage(w, err, "", http.StatusInternalServerError)
+			respondWithErrorPage(w, err, http.StatusInternalServerError)
 			return
 		}
 
 		dateCreated, err := time.Parse(time.RFC3339, rawDateCreated)
 		if err != nil {
-			respondWithErrorPage(w, err, "", http.StatusInternalServerError)
+			respondWithErrorPage(w, err, http.StatusInternalServerError)
 			return
 		}
 
@@ -154,7 +151,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		if rawDateUpdated != nil {
 			dateUpdated, err = time.Parse(time.RFC3339, *rawDateUpdated)
 			if err != nil {
-				respondWithErrorPage(w, err, "", http.StatusInternalServerError)
+				respondWithErrorPage(w, err, http.StatusInternalServerError)
 				return
 			}
 		}
@@ -163,7 +160,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	}
 	err = rows.Err()
 	if err != nil {
-		respondWithErrorPage(w, err, "", http.StatusInternalServerError)
+		respondWithErrorPage(w, err, http.StatusInternalServerError)
 		return
 	}
 
@@ -195,25 +192,25 @@ func indexHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 func noteSubmitHandler(w http.ResponseWriter, r *http.Request, db *sql.DB, mdParser goldmark.Markdown) {
 	err := r.ParseForm()
 	if err != nil {
-		respondWithErrorPage(w, err, "", http.StatusBadRequest)
+		respondWithErrorPage(w, err, http.StatusBadRequest)
 		return
 	}
 	mdNote := r.FormValue("note")
 	if strings.TrimSpace(mdNote) == "" {
-		respondWithErrorPage(w, fmt.Errorf("note is empty"), "", http.StatusBadRequest)
+		respondWithErrorPage(w, fmt.Errorf("note is empty"), http.StatusBadRequest)
 		return
 	}
 
 	buf := bytes.NewBuffer(nil)
 	err = mdParser.Convert([]byte(mdNote), buf)
 	if err != nil {
-		respondWithErrorPage(w, err, "", http.StatusBadRequest)
+		respondWithErrorPage(w, err, http.StatusBadRequest)
 		return
 	}
 
 	_, err = db.ExecContext(r.Context(), `INSERT INTO note(date_created, markdown, html) VALUES(?,?,?)`, time.Now().Format(time.RFC3339), mdNote, buf.String())
 	if err != nil {
-		respondWithErrorPage(w, err, "", http.StatusInternalServerError)
+		respondWithErrorPage(w, err, http.StatusInternalServerError)
 		return
 	}
 
@@ -223,14 +220,14 @@ func noteSubmitHandler(w http.ResponseWriter, r *http.Request, db *sql.DB, mdPar
 func noteEditHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	noteID, err := strconv.Atoi(chi.URLParam(r, "noteID"))
 	if err != nil {
-		respondWithErrorPage(w, err, "", http.StatusBadRequest)
+		respondWithErrorPage(w, err, http.StatusBadRequest)
 		return
 	}
 
 	var md string
 	err = db.QueryRowContext(r.Context(), `SELECT markdown FROM note WHERE id = ?`, noteID).Scan(&md)
 	if err != nil {
-		respondWithErrorPage(w, err, "", http.StatusInternalServerError)
+		respondWithErrorPage(w, err, http.StatusInternalServerError)
 		return
 	}
 
@@ -250,13 +247,13 @@ func noteEditHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 func noteUpdateHandler(w http.ResponseWriter, r *http.Request, db *sql.DB, mdParser goldmark.Markdown) {
 	noteID, err := strconv.Atoi(chi.URLParam(r, "noteID"))
 	if err != nil {
-		respondWithErrorPage(w, err, "", http.StatusBadRequest)
+		respondWithErrorPage(w, err, http.StatusBadRequest)
 		return
 	}
 
 	err = r.ParseForm()
 	if err != nil {
-		respondWithErrorPage(w, err, "", http.StatusBadRequest)
+		respondWithErrorPage(w, err, http.StatusBadRequest)
 		return
 	}
 	mdNote := r.FormValue("note")
@@ -264,13 +261,13 @@ func noteUpdateHandler(w http.ResponseWriter, r *http.Request, db *sql.DB, mdPar
 	buf := bytes.NewBuffer(nil)
 	err = mdParser.Convert([]byte(mdNote), buf)
 	if err != nil {
-		respondWithErrorPage(w, err, "", http.StatusBadRequest)
+		respondWithErrorPage(w, err, http.StatusBadRequest)
 		return
 	}
 
 	_, err = db.ExecContext(r.Context(), `UPDATE note SET markdown=?, html=?, date_updated=? WHERE id=?;`, mdNote, buf.String(), time.Now().Format(time.RFC3339), noteID)
 	if err != nil {
-		respondWithErrorPage(w, err, "", http.StatusInternalServerError)
+		respondWithErrorPage(w, err, http.StatusInternalServerError)
 		return
 	}
 
@@ -280,7 +277,7 @@ func noteUpdateHandler(w http.ResponseWriter, r *http.Request, db *sql.DB, mdPar
 func noteDeleteHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	noteID, err := strconv.Atoi(chi.URLParam(r, "noteID"))
 	if err != nil {
-		respondWithErrorPage(w, err, "", http.StatusBadRequest)
+		respondWithErrorPage(w, err, http.StatusBadRequest)
 		return
 	}
 
@@ -301,7 +298,7 @@ func noteDeleteHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	case "POST":
 		err = r.ParseForm()
 		if err != nil {
-			respondWithErrorPage(w, err, "", http.StatusBadRequest)
+			respondWithErrorPage(w, err, http.StatusBadRequest)
 			return
 		}
 
@@ -312,16 +309,16 @@ func noteDeleteHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		case "delete":
 			res, err := db.ExecContext(r.Context(), `DELETE FROM note WHERE id = ?`, noteID)
 			if err != nil {
-				respondWithErrorPage(w, err, "", http.StatusInternalServerError)
+				respondWithErrorPage(w, err, http.StatusInternalServerError)
 				return
 			}
 			n, err := res.RowsAffected()
 			if err != nil {
-				respondWithErrorPage(w, err, "", http.StatusInternalServerError)
+				respondWithErrorPage(w, err, http.StatusInternalServerError)
 				return
 			}
 			if n != 1 {
-				respondWithErrorPage(w, fmt.Errorf("expected to delete one row but was %d", n), "", http.StatusInternalServerError)
+				respondWithErrorPage(w, fmt.Errorf("expected to delete one row but was %d", n), http.StatusInternalServerError)
 				return
 			}
 
@@ -329,7 +326,7 @@ func noteDeleteHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 			return
 		}
 
-		respondWithErrorPage(w, fmt.Errorf("unknown submit value %q", r.FormValue("submit")), "", http.StatusBadRequest)
+		respondWithErrorPage(w, fmt.Errorf("unknown submit value %q", r.FormValue("submit")), http.StatusBadRequest)
 		return
 	}
 }
@@ -337,18 +334,18 @@ func noteDeleteHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 func noteSearchHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	err := r.ParseForm()
 	if err != nil {
-		respondWithErrorPage(w, err, "", http.StatusBadRequest)
+		respondWithErrorPage(w, err, http.StatusBadRequest)
 		return
 	}
 	pattern := r.FormValue("search-pattern")
 	if strings.TrimSpace(pattern) == "" {
-		respondWithErrorPage(w, fmt.Errorf("search-pattern is missing"), "", http.StatusBadRequest)
+		respondWithErrorPage(w, fmt.Errorf("search-pattern is missing"), http.StatusBadRequest)
 		return
 	}
 
 	rows, err := db.QueryContext(r.Context(), `SELECT id, date_created, date_updated, html FROM note WHERE id IN (SELECT id FROM note_fts WHERE markdown MATCH ?);`, pattern)
 	if err != nil {
-		respondWithErrorPage(w, err, "", http.StatusInternalServerError)
+		respondWithErrorPage(w, err, http.StatusInternalServerError)
 		return
 	}
 	defer rows.Close()
@@ -362,13 +359,13 @@ func noteSearchHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		)
 		err = rows.Scan(&id, &rawDateCreated, &rawDateUpdated, &noteHTML)
 		if err != nil {
-			respondWithErrorPage(w, err, "", http.StatusInternalServerError)
+			respondWithErrorPage(w, err, http.StatusInternalServerError)
 			return
 		}
 
 		dateCreated, err := time.Parse(time.RFC3339, rawDateCreated)
 		if err != nil {
-			respondWithErrorPage(w, err, "", http.StatusInternalServerError)
+			respondWithErrorPage(w, err, http.StatusInternalServerError)
 			return
 		}
 
@@ -376,7 +373,7 @@ func noteSearchHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		if rawDateUpdated != nil {
 			dateUpdated, err = time.Parse(time.RFC3339, *rawDateUpdated)
 			if err != nil {
-				respondWithErrorPage(w, err, "", http.StatusInternalServerError)
+				respondWithErrorPage(w, err, http.StatusInternalServerError)
 				return
 			}
 		}
@@ -385,7 +382,7 @@ func noteSearchHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	}
 	err = rows.Err()
 	if err != nil {
-		respondWithErrorPage(w, err, "", http.StatusInternalServerError)
+		respondWithErrorPage(w, err, http.StatusInternalServerError)
 		return
 	}
 
