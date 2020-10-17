@@ -511,7 +511,7 @@ func run(ctx context.Context, dbPassphrase, httpAddr string) error {
 	})
 	r.Get("/assets/*", assetHandler)
 
-	log.Printf("listening on %q", httpAddr)
+	log.Printf("listening on http://%s", httpAddr)
 	return http.ListenAndServe(httpAddr, r)
 }
 
