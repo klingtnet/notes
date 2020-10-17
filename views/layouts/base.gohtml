@@ -32,16 +32,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" href="/assets/favicon.svg">
-  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.2/styles/default.min.css">
   <link rel="stylesheet" href="/assets/base.css">
-  <script defer src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.2/highlight.min.js"></script>
   <script defer src="/assets/base.js"></script>
 </head>
 <body>
   <header>{{ template "header" .Header }}</header>
   <main>{{ template "main" .Main }}</main>
   <footer>{{ template "footer" .Footer }}</footer>
-  <script>hljs.initHighlightingOnLoad();</script>
 </body>
 </html>
 {{ end }}

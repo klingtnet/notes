@@ -20,6 +20,7 @@ import (
 	"time"
 	"unicode"
 
+	chromaHTML "github.com/alecthomas/chroma/formatters/html"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/golang-migrate/migrate/v4"
@@ -30,6 +31,7 @@ import (
 	"github.com/urfave/cli/v2"
 	"github.com/yuin/goldmark"
 	goldmarkEmoji "github.com/yuin/goldmark-emoji"
+	goldmarkHighlighting "github.com/yuin/goldmark-highlighting"
 	goldmarkExtension "github.com/yuin/goldmark/extension"
 )
 
@@ -488,7 +490,10 @@ func run(ctx context.Context, dbPassphrase, httpAddr string) error {
 		return err
 	}
 
-	mdParser := goldmark.New(goldmark.WithExtensions(goldmarkExtension.GFM, goldmarkEmoji.Emoji))
+	highlightingExtension := goldmarkHighlighting.NewHighlighting(
+		goldmarkHighlighting.WithFormatOptions(chromaHTML.WithClasses(true)),
+	)
+	mdParser := goldmark.New(goldmark.WithExtensions(goldmarkExtension.GFM, goldmarkEmoji.Emoji, highlightingExtension))
 
 	r := chi.NewRouter()
 	r.Use(middleware.Recoverer, middleware.Logger, middleware.Compress(5))
@@ -515,22 +520,129 @@ func run(ctx context.Context, dbPassphrase, httpAddr string) error {
 	return http.ListenAndServe(httpAddr, r)
 }
 
+func renewAction(c *cli.Context) error {
+	dbPassphrase := strings.TrimSpace(c.String("database-passphrase"))
+	if dbPassphrase == "" {
+		return fmt.Errorf("required database passphrase is empty")
+	}
+
+	dbURI := fmt.Sprintf("file:notes.db?_pragma_key=%s&_pragma_cipher_page_size=4096&_foreign_keys=1", url.QueryEscape(dbPassphrase))
+	db, err := sql.Open("sqlite3", dbURI)
+	if err != nil {
+		return err
+	}
+	driver, err := sqlcipher.WithInstance(db, &sqlcipher.Config{})
+	if err != nil {
+		return err
+	}
+
+	sourceDriver, err := embedMigrate.WithInstance(Embeds)
+	if err != nil {
+		return err
+	}
+	m, err := migrate.NewWithInstance("embed", sourceDriver, "sqlite3", driver)
+	if err != nil {
+		return err
+	}
+	err = m.Up()
+	if err != nil && !errors.Is(err, migrate.ErrNoChange) {
+		return err
+	}
+
+	highlightingExtension := goldmarkHighlighting.NewHighlighting(
+		goldmarkHighlighting.WithFormatOptions(chromaHTML.WithClasses(true)),
+	)
+	mdParser := goldmark.New(goldmark.WithExtensions(goldmarkExtension.GFM, goldmarkEmoji.Emoji, highlightingExtension))
+
+	return renew(c.Context, db, mdParser)
+}
+
+func renew(ctx context.Context, db *sql.DB, mdParser goldmark.Markdown) error {
+	rows, err := db.QueryContext(ctx, `SELECT id, markdown FROM note;`)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	notes := make(map[int64]string)
+	for rows.Next() {
+		var id int64
+		var mdNote string
+		err = rows.Scan(&id, &mdNote)
+		if err != nil {
+			return err
+		}
+
+		buf := bytes.NewBuffer(nil)
+		err = mdParser.Convert([]byte(mdNote), buf)
+		if err != nil {
+			return err
+		}
+
+		notes[id] = buf.String()
+	}
+	err = rows.Err()
+	if err != nil {
+		return err
+	}
+
+	update := func() error {
+		tx, err := db.BeginTx(ctx, nil)
+		if err != nil {
+			return err
+		}
+		defer func() {
+			_ = tx.Rollback()
+		}()
+
+		for id, html := range notes {
+			_, err = db.ExecContext(ctx, `UPDATE note SET html=? WHERE id=?;`, html, id)
+			if err != nil {
+				return err
+			}
+		}
+
+		return tx.Commit()
+	}
+
+	return update()
+}
+
 func main() {
 	app := cli.App{
 		Name:    AppName,
 		Version: Version,
-		Action:  runAction,
-		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:     "database-passphrase",
-				Usage:    "SQLcipher database passphrase",
-				EnvVars:  []string{"DATABASE_PASSPHRASE"},
-				Required: true,
+		Commands: []*cli.Command{
+			{
+				Name:   "run",
+				Usage:  "run the note server",
+				Action: runAction,
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:     "database-passphrase",
+						Usage:    "SQLcipher database passphrase",
+						EnvVars:  []string{"DATABASE_PASSPHRASE"},
+						Required: true,
+					},
+					&cli.StringFlag{
+						Name:  "listen-addr",
+						Usage: "HTTP listen address",
+						Value: "localhost:3333",
+					},
+				},
 			},
-			&cli.StringFlag{
-				Name:  "listen-addr",
-				Usage: "HTTP listen address",
-				Value: "localhost:3333",
+			{
+				Name:   "renew",
+				Usage:  "renew refreshes all existing notes by rendering them again",
+				Action: renewAction,
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:     "database-passphrase",
+						Usage:    "SQLcipher database passphrase",
+						EnvVars:  []string{"DATABASE_PASSPHRASE"},
+						Required: true,
+					},
+				},
 			},
 		},
 	}
