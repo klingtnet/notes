@@ -167,6 +167,11 @@ span.last-update:hover {
   transition: ease-in 0.3s;
 }
 
+span.clue {
+  color: var(--dimmed);
+  margin-left: 1em;
+}
+
 var {
   font-family: monospace;
 }
