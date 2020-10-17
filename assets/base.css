@@ -63,6 +63,7 @@ nav > form {
 input#search-pattern {
   border-radius: var(--border-radius);
   border: var(--border);
+  min-width: 32ch;
   padding: 0.5em 2em;
   color: var(--font-color);
   background-color: var(--light-bg);
