@@ -197,3 +197,15 @@ pre.chroma {
   font-family: "JetBrains Mono";
   src: url("/assets/JetBrainsMono-Regular.woff2") format("woff2");
 }
+
+@font-face {
+  font-family: "Cantarell";
+  src: url("/assets/Cantarell-Regular.woff2") format("woff2");
+  font-weight: normal;
+}
+
+@font-face {
+  font-family: "Cantarell";
+  src: url("/assets/Cantarell-Bold.woff2") format("woff2");
+  font-weight: bold;
+}
