@@ -192,3 +192,8 @@ pre.chroma {
   padding: 1em;
   margin: 2em 0;
 }
+
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("/assets/JetBrainsMono-Regular.woff2") format("woff2");
+}
