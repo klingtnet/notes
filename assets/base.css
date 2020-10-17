@@ -4,7 +4,8 @@
   /* color scheme was designed using colormind.io */
   --primary: #217c8f;
   --secondary: #c29260;
-  --highlight: #ae494a;
+  --highlight: #d35759;
+  --warning: #ae494a;
   --background-color: white;
   --dimmed: #c6dabe;
   --light-bg: #f0f0f0;
@@ -109,11 +110,11 @@ button:hover {
 }
 
 button[value="delete"] {
-  background-color: var(--highlight);
+  background-color: var(--warning);
 }
 
 button[value="delete"]:hover {
-  background-color: red;
+  background-color: var(--highlight);
 }
 
 form.note-edit > button[type="submit"] {
