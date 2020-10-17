@@ -16,9 +16,6 @@
   :root {
     --border: 1px solid white;
     /* color scheme was designed using colormind.io */
-    --primary: #217c8f;
-    --secondary: #c29260;
-    --highlight: #ae494a;
     --background-color: #212121;
     --dimmed: #333731;
     --light-bg: #303030;
