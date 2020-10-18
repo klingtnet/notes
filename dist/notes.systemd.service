@@ -1,0 +1,12 @@
+[Unit]
+Description=notes is a personal journal service
+Documentation=https://github.com/klingtnet/notes
+
+[Service]
+# man systemd.unit
+# %E expands to $XDG_CONFIG_HOME
+EnvironmentFile=%E/notes/notes.env
+ExecStart=%h/.local/bin/notes run --listen-addr=localhost:13333 --database-path=%E/notes/notes.db
+
+[Install]
+WantedBy=default.target

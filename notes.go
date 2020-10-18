@@ -446,6 +446,11 @@ func assetHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func runAction(c *cli.Context) error {
+	dbPath := strings.TrimSpace(c.String("database-path"))
+	if dbPath == "" {
+		return fmt.Errorf("required database path is empty")
+	}
+
 	dbPassphrase := strings.TrimSpace(c.String("database-passphrase"))
 	if dbPassphrase == "" {
 		return fmt.Errorf("required database passphrase is empty")
@@ -455,7 +460,7 @@ func runAction(c *cli.Context) error {
 	deleteTemplate = parseTemplate("views/layouts/base.gohtml", "views/delete.gohtml")
 	errorTemplate = parseTemplate("views/layouts/base.gohtml", "views/error.gohtml")
 
-	return run(c.Context, dbPassphrase, c.String("listen-addr"))
+	return run(c.Context, dbPath, dbPassphrase, c.String("listen-addr"))
 }
 
 func parseTemplate(layout, content string) *template.Template {
@@ -464,8 +469,8 @@ func parseTemplate(layout, content string) *template.Template {
 	return template.Must(t.Parse(Embeds.FileString(layout)))
 }
 
-func run(ctx context.Context, dbPassphrase, httpAddr string) error {
-	dbURI := fmt.Sprintf("file:notes.db?_pragma_key=%s&_pragma_cipher_page_size=4096&_foreign_keys=1", url.QueryEscape(dbPassphrase))
+func run(ctx context.Context, dbPath, dbPassphrase, httpAddr string) error {
+	dbURI := fmt.Sprintf("file:%s?_pragma_key=%s&_pragma_cipher_page_size=4096&_foreign_keys=1", dbPath, url.QueryEscape(dbPassphrase))
 	db, err := sql.Open("sqlite3", dbURI)
 	if err != nil {
 		return err
@@ -516,12 +521,17 @@ func run(ctx context.Context, dbPassphrase, httpAddr string) error {
 }
 
 func renewAction(c *cli.Context) error {
+	dbPath := strings.TrimSpace(c.String("database-path"))
+	if dbPath == "" {
+		return fmt.Errorf("required database path is empty")
+	}
+
 	dbPassphrase := strings.TrimSpace(c.String("database-passphrase"))
 	if dbPassphrase == "" {
 		return fmt.Errorf("required database passphrase is empty")
 	}
 
-	dbURI := fmt.Sprintf("file:notes.db?_pragma_key=%s&_pragma_cipher_page_size=4096&_foreign_keys=1", url.QueryEscape(dbPassphrase))
+	dbURI := fmt.Sprintf("file:%s?_pragma_key=%s&_pragma_cipher_page_size=4096&_foreign_keys=1", dbPath, url.QueryEscape(dbPassphrase))
 	db, err := sql.Open("sqlite3", dbURI)
 	if err != nil {
 		return err
@@ -617,9 +627,14 @@ func main() {
 						Required: true,
 					},
 					&cli.StringFlag{
+						Name:     "database-path",
+						Usage:    "path to the database file",
+						Required: true,
+					},
+					&cli.StringFlag{
 						Name:  "listen-addr",
 						Usage: "HTTP listen address",
-						Value: "localhost:3333",
+						Value: "localhost:13333",
 					},
 				},
 			},
@@ -632,6 +647,11 @@ func main() {
 						Name:     "database-passphrase",
 						Usage:    "SQLcipher database passphrase",
 						EnvVars:  []string{"DATABASE_PASSPHRASE"},
+						Required: true,
+					},
+					&cli.StringFlag{
+						Name:     "database-path",
+						Usage:    "path to the database file",
 						Required: true,
 					},
 				},
