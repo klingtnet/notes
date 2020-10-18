@@ -190,6 +190,7 @@ pre {
   border-bottom: 0.1em solid var(--primary);
   padding: 1em;
   margin: 2em 0;
+  white-space: pre-wrap;
 }
 
 code {
