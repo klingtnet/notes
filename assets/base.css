@@ -77,7 +77,6 @@ textarea#note {
   border: var(--border);
   padding: 2em;
   font-family: var(--monospace);
-  font-size: larger;
   width: 100%;
   height: 24ch;
   transition: ease-out 0.3s;
