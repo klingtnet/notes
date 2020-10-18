@@ -1,4 +1,5 @@
 .PHONY: notes run embeds.go
+LISTEN_ADDR?=localhost:3333
 
 GIT_REVISION:=$(shell git describe --always --tags)
 
@@ -23,7 +24,7 @@ install: notes
 	@echo http://localhost:13333
 
 run: notes
-	./notes run --database-passphrase $$DATABASE_PASSPHRASE --database-path=notes.db
+	./notes run --database-passphrase $$DATABASE_PASSPHRASE --database-path=notes.db --listen-addr=$(LISTEN_ADDR)
 
 renew:
 	./notes renew --database-passphrase $$DATABASE_PASSPHRASE --database-path=notes.db
