@@ -36,10 +36,17 @@
   font-size: 1.1rem;
 }
 
+html {
+  height: 100%;
+}
+
 body {
   margin: 0;
   color: var(--font-color);
   background-color: var(--background-color);
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  height: 100%;
 }
 
 header,
