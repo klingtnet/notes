@@ -185,12 +185,15 @@ footer > ul {
   width: 100%;
 }
 
-pre.chroma {
-  font-family: "JetBrains Mono", monospace;
+pre {
   border-top: 0.1em solid var(--primary);
   border-bottom: 0.1em solid var(--primary);
   padding: 1em;
   margin: 2em 0;
+}
+
+code {
+  font-family: "JetBrains Mono", monospace;
 }
 
 @font-face {

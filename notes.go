@@ -20,7 +20,6 @@ import (
 	"time"
 	"unicode"
 
-	chromaHTML "github.com/alecthomas/chroma/formatters/html"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/golang-migrate/migrate/v4"
@@ -31,7 +30,6 @@ import (
 	"github.com/urfave/cli/v2"
 	"github.com/yuin/goldmark"
 	goldmarkEmoji "github.com/yuin/goldmark-emoji"
-	goldmarkHighlighting "github.com/yuin/goldmark-highlighting"
 	goldmarkExtension "github.com/yuin/goldmark/extension"
 )
 
@@ -490,10 +488,7 @@ func run(ctx context.Context, dbPassphrase, httpAddr string) error {
 		return err
 	}
 
-	highlightingExtension := goldmarkHighlighting.NewHighlighting(
-		goldmarkHighlighting.WithFormatOptions(chromaHTML.WithClasses(true)),
-	)
-	mdParser := goldmark.New(goldmark.WithExtensions(goldmarkExtension.GFM, goldmarkEmoji.Emoji, highlightingExtension))
+	mdParser := goldmark.New(goldmark.WithExtensions(goldmarkExtension.GFM, goldmarkEmoji.Emoji))
 
 	r := chi.NewRouter()
 	r.Use(middleware.Recoverer, middleware.Logger, middleware.Compress(5))
@@ -549,10 +544,7 @@ func renewAction(c *cli.Context) error {
 		return err
 	}
 
-	highlightingExtension := goldmarkHighlighting.NewHighlighting(
-		goldmarkHighlighting.WithFormatOptions(chromaHTML.WithClasses(true)),
-	)
-	mdParser := goldmark.New(goldmark.WithExtensions(goldmarkExtension.GFM, goldmarkEmoji.Emoji, highlightingExtension))
+	mdParser := goldmark.New(goldmark.WithExtensions(goldmarkExtension.GFM, goldmarkEmoji.Emoji))
 
 	return renew(c.Context, db, mdParser)
 }
