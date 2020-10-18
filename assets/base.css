@@ -93,8 +93,7 @@ textarea#note:focus {
 
 button {
   border-radius: var(--border-radius);
-  border: var(--border);
-  border-color: var(--primary);
+  border: none;
   background-color: var(--primary);
   color: white;
   padding: 0.5em 2em;
