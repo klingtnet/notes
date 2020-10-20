@@ -8,6 +8,7 @@ require (
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/klingtnet/embed v0.0.1
 	github.com/mutecomm/go-sqlcipher/v4 v4.4.0
+	github.com/stretchr/testify v1.5.1
 	github.com/urfave/cli/v2 v2.2.0
 	github.com/yuin/goldmark v1.2.1
 	github.com/yuin/goldmark-emoji v1.0.1

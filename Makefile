@@ -3,10 +3,13 @@ LISTEN_ADDR?=localhost:3333
 
 GIT_REVISION:=$(shell git describe --always --tags)
 
-all: notes lint
+all: test notes
 
 notes: embeds.go
 	go build -ldflags="-X 'main.Version=$(GIT_REVISION)'" .
+
+test: lint
+	go test .
 
 lint:
 	golangci-lint run .
