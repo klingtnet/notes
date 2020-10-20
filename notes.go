@@ -45,6 +45,7 @@ var (
 	errorTemplate *template.Template
 )
 
+// TemplateData contains all information required to render a template.
 type TemplateData struct {
 	Title  string
 	Header TemplateHeaderData
@@ -59,16 +60,19 @@ type NoteRecord struct {
 	HTML template.HTML
 }
 
+// TemplateHeaderData contains data required by the header template.
 type TemplateHeaderData struct {
 	AppName,
 	Title string
 }
 
+// TemplateMainData contains data required by the main template.
 type TemplateMainData struct {
 	Heading string
 	Content interface{}
 }
 
+// TemplateIndexContent contains data required by the index template.
 type TemplateIndexContent struct {
 	NotesByDay map[time.Time][]NoteRecord
 	Days       []time.Time
@@ -76,10 +80,12 @@ type TemplateIndexContent struct {
 	SubmitAction string
 }
 
+// TemplateErrorContent contains data required by the error template.
 type TemplateErrorContent struct {
 	ErrorMessage string
 }
 
+// TemplateFooterData contains data required by the footer template.
 type TemplateFooterData struct {
 	AppName,
 	Version string
