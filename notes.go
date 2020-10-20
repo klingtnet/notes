@@ -26,6 +26,7 @@ import (
 	"github.com/yuin/goldmark"
 	goldmarkEmoji "github.com/yuin/goldmark-emoji"
 	goldmarkExtension "github.com/yuin/goldmark/extension"
+	goldmarkHTML "github.com/yuin/goldmark/renderer/html"
 )
 
 // AppName is the name of the application.
@@ -371,7 +372,10 @@ func run(ctx context.Context, dbPath, dbPassphrase, httpAddr string) error {
 		return err
 	}
 
-	mdParser := goldmark.New(goldmark.WithExtensions(goldmarkExtension.GFM, goldmarkEmoji.Emoji))
+	mdParser := goldmark.New(
+		goldmark.WithExtensions(goldmarkExtension.GFM, goldmarkEmoji.Emoji),
+		goldmark.WithRendererOptions(goldmarkHTML.WithUnsafe()),
+	)
 	markdownToHTML := func(markdown string) (string, error) {
 		buf := bytes.NewBuffer(nil)
 		err = mdParser.Convert([]byte(markdown), buf)
@@ -426,7 +430,10 @@ func renewAction(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	mdParser := goldmark.New(goldmark.WithExtensions(goldmarkExtension.GFM, goldmarkEmoji.Emoji))
+	mdParser := goldmark.New(
+		goldmark.WithExtensions(goldmarkExtension.GFM, goldmarkEmoji.Emoji),
+		goldmark.WithRendererOptions(goldmarkHTML.WithUnsafe()),
+	)
 	markdownToHTML := func(markdown string) (string, error) {
 		buf := bytes.NewBuffer(nil)
 		err = mdParser.Convert([]byte(markdown), buf)
