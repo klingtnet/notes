@@ -169,6 +169,10 @@ article > div.content {
   margin-left: 2em;
 }
 
+article img {
+  width: 100%;
+}
+
 div.article-headline > h3 {
   display: inline;
 }
