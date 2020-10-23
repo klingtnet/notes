@@ -14,7 +14,7 @@ import (
 	embedMigrate "github.com/klingtnet/embed/migrate"
 )
 
-type NoteStorage interface {
+type noteStorage interface {
 	// Insert stores a new note.
 	Insert(ctx context.Context, markdown string) (id int64, err error)
 	// Update overwrites the existing markdown content for the note, renders it to HTML and sets the updated time.
@@ -33,12 +33,12 @@ type NoteStorage interface {
 	Renew(ctx context.Context) error
 }
 
-type SQLCipherNotes struct {
+type sqlCipherNotes struct {
 	db             *sql.DB
 	markdownToHTML func(string) (string, error)
 }
 
-func NewSQLCipherNotes(db *sql.DB, markdownToHTML func(string) (string, error)) (*SQLCipherNotes, error) {
+func newSQLCipherNotes(db *sql.DB, markdownToHTML func(string) (string, error)) (*sqlCipherNotes, error) {
 	driver, err := sqlcipher.WithInstance(db, &sqlcipher.Config{})
 	if err != nil {
 		return nil, err
@@ -57,11 +57,11 @@ func NewSQLCipherNotes(db *sql.DB, markdownToHTML func(string) (string, error)) 
 		return nil, err
 	}
 
-	return &SQLCipherNotes{db, markdownToHTML}, nil
+	return &sqlCipherNotes{db, markdownToHTML}, nil
 }
 
 // Insert implements NoteStorage.
-func (s *SQLCipherNotes) Insert(ctx context.Context, markdown string) (id int64, err error) {
+func (s *sqlCipherNotes) Insert(ctx context.Context, markdown string) (id int64, err error) {
 	html, err := s.markdownToHTML(markdown)
 	if err != nil {
 		return
@@ -76,7 +76,7 @@ func (s *SQLCipherNotes) Insert(ctx context.Context, markdown string) (id int64,
 }
 
 // Update implements NoteStorage.
-func (s *SQLCipherNotes) Update(ctx context.Context, id int64, markdown string) (err error) {
+func (s *sqlCipherNotes) Update(ctx context.Context, id int64, markdown string) (err error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	defer func() {
 		rollbackErr := tx.Rollback()
@@ -98,7 +98,7 @@ func (s *SQLCipherNotes) Update(ctx context.Context, id int64, markdown string) 
 	return
 }
 
-func (s *SQLCipherNotes) updateTx(ctx context.Context, tx *sql.Tx, id int64, markdown string) error {
+func (s *sqlCipherNotes) updateTx(ctx context.Context, tx *sql.Tx, id int64, markdown string) error {
 	html, err := s.markdownToHTML(markdown)
 	if err != nil {
 		return err
@@ -119,7 +119,7 @@ func (s *SQLCipherNotes) updateTx(ctx context.Context, tx *sql.Tx, id int64, mar
 }
 
 // Search implements NoteStorage.
-func (s *SQLCipherNotes) Search(ctx context.Context, pattern string) (notes []Note, err error) {
+func (s *sqlCipherNotes) Search(ctx context.Context, pattern string) (notes []Note, err error) {
 	var containsOtherUnicode bool
 	for _, c := range pattern {
 		if unicode.In(c, unicode.Lo) {
@@ -174,7 +174,7 @@ func (s *SQLCipherNotes) Search(ctx context.Context, pattern string) (notes []No
 }
 
 // Delete implents NoteStorage.
-func (s *SQLCipherNotes) Delete(ctx context.Context, id int64) error {
+func (s *sqlCipherNotes) Delete(ctx context.Context, id int64) error {
 	res, err := s.db.ExecContext(ctx, `DELETE FROM note WHERE id = ?`, id)
 	if err != nil {
 		return err
@@ -190,7 +190,7 @@ func (s *SQLCipherNotes) Delete(ctx context.Context, id int64) error {
 }
 
 // Note implements NoteStorage.
-func (s *SQLCipherNotes) Note(ctx context.Context, id int64) (note *Note, err error) {
+func (s *sqlCipherNotes) Note(ctx context.Context, id int64) (note *Note, err error) {
 	var (
 		rawDateCreated, markdown, noteHTML string
 		rawDateUpdated                     = new(string)
@@ -219,7 +219,7 @@ func (s *SQLCipherNotes) Note(ctx context.Context, id int64) (note *Note, err er
 }
 
 // Notes implements NoteStorage.
-func (s *SQLCipherNotes) Notes(ctx context.Context) (notes []Note, err error) {
+func (s *sqlCipherNotes) Notes(ctx context.Context) (notes []Note, err error) {
 	rows, err := s.db.QueryContext(ctx, `SELECT id, date_created, date_updated, markdown, html FROM note ORDER BY date_created DESC;`)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -269,7 +269,7 @@ func (s *SQLCipherNotes) Notes(ctx context.Context) (notes []Note, err error) {
 }
 
 // Renew implements NoteStorage.
-func (s *SQLCipherNotes) Renew(ctx context.Context) (err error) {
+func (s *sqlCipherNotes) Renew(ctx context.Context) (err error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return

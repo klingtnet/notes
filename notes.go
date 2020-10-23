@@ -125,7 +125,7 @@ func respondWithErrorPage(w http.ResponseWriter, err error, statusCode int) {
 	}
 }
 
-func indexHandler(w http.ResponseWriter, r *http.Request, noteStor NoteStorage) {
+func indexHandler(w http.ResponseWriter, r *http.Request, noteStor noteStorage) {
 	notes, err := noteStor.Notes(r.Context())
 	if err != nil {
 		respondWithErrorPage(w, err, http.StatusInternalServerError)
@@ -157,7 +157,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request, noteStor NoteStorage) 
 	respondWithTemplate(w, r, indexTemplate, td)
 }
 
-func noteSubmitHandler(w http.ResponseWriter, r *http.Request, noteStor NoteStorage) {
+func noteSubmitHandler(w http.ResponseWriter, r *http.Request, noteStor noteStorage) {
 	err := r.ParseForm()
 	if err != nil {
 		respondWithErrorPage(w, err, http.StatusBadRequest)
@@ -178,7 +178,7 @@ func noteSubmitHandler(w http.ResponseWriter, r *http.Request, noteStor NoteStor
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
-func noteEditHandler(w http.ResponseWriter, r *http.Request, noteStor NoteStorage) {
+func noteEditHandler(w http.ResponseWriter, r *http.Request, noteStor noteStorage) {
 	noteID, err := strconv.Atoi(chi.URLParam(r, "noteID"))
 	if err != nil {
 		respondWithErrorPage(w, err, http.StatusBadRequest)
@@ -204,7 +204,7 @@ func noteEditHandler(w http.ResponseWriter, r *http.Request, noteStor NoteStorag
 	respondWithTemplate(w, r, indexTemplate, td)
 }
 
-func noteUpdateHandler(w http.ResponseWriter, r *http.Request, noteStor NoteStorage) {
+func noteUpdateHandler(w http.ResponseWriter, r *http.Request, noteStor noteStorage) {
 	noteID, err := strconv.Atoi(chi.URLParam(r, "noteID"))
 	if err != nil {
 		respondWithErrorPage(w, err, http.StatusBadRequest)
@@ -231,7 +231,7 @@ func noteUpdateHandler(w http.ResponseWriter, r *http.Request, noteStor NoteStor
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
-func noteDeleteHandler(w http.ResponseWriter, r *http.Request, noteStor NoteStorage) {
+func noteDeleteHandler(w http.ResponseWriter, r *http.Request, noteStor noteStorage) {
 	noteID, err := strconv.Atoi(chi.URLParam(r, "noteID"))
 	if err != nil {
 		respondWithErrorPage(w, err, http.StatusBadRequest)
@@ -279,7 +279,7 @@ func noteDeleteHandler(w http.ResponseWriter, r *http.Request, noteStor NoteStor
 	}
 }
 
-func noteSearchHandler(w http.ResponseWriter, r *http.Request, noteStor NoteStorage) {
+func noteSearchHandler(w http.ResponseWriter, r *http.Request, noteStor noteStorage) {
 	err := r.ParseForm()
 	if err != nil {
 		respondWithErrorPage(w, err, http.StatusBadRequest)
@@ -384,7 +384,7 @@ func run(ctx context.Context, dbPath, dbPassphrase, httpAddr string) error {
 		}
 		return buf.String(), nil
 	}
-	noteStor, err := NewSQLCipherNotes(db, markdownToHTML)
+	noteStor, err := newSQLCipherNotes(db, markdownToHTML)
 	if err != nil {
 		return err
 	}
@@ -442,7 +442,7 @@ func renewAction(c *cli.Context) error {
 		}
 		return buf.String(), nil
 	}
-	noteStor, err := NewSQLCipherNotes(db, markdownToHTML)
+	noteStor, err := newSQLCipherNotes(db, markdownToHTML)
 	if err != nil {
 		return err
 	}

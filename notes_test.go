@@ -28,7 +28,7 @@ func testConvert(t *testing.T, prefix string) func(string) (string, error) {
 func TestInsert(t *testing.T) {
 	db := setupTestDB(t)
 
-	ns, err := NewSQLCipherNotes(db, testConvert(t, t.Name()))
+	ns, err := newSQLCipherNotes(db, testConvert(t, t.Name()))
 	require.NoError(t, err)
 
 	notes, err := ns.Notes(context.Background())
@@ -52,7 +52,7 @@ func TestInsert(t *testing.T) {
 func TestEdit(t *testing.T) {
 	db := setupTestDB(t)
 
-	ns, err := NewSQLCipherNotes(db, testConvert(t, t.Name()))
+	ns, err := newSQLCipherNotes(db, testConvert(t, t.Name()))
 	require.NoError(t, err)
 
 	id, err := ns.Insert(context.Background(), "Does not matter much.")
@@ -93,7 +93,7 @@ func TestEdit(t *testing.T) {
 
 func TestSearch(t *testing.T) {
 	db := setupTestDB(t)
-	ns, err := NewSQLCipherNotes(db, testConvert(t, t.Name()))
+	ns, err := newSQLCipherNotes(db, testConvert(t, t.Name()))
 	require.NoError(t, err)
 
 	mustRead := func(p string) string {
@@ -132,7 +132,7 @@ func TestSearch(t *testing.T) {
 func TestDelete(t *testing.T) {
 	db := setupTestDB(t)
 
-	ns, err := NewSQLCipherNotes(db, testConvert(t, t.Name()))
+	ns, err := newSQLCipherNotes(db, testConvert(t, t.Name()))
 	require.NoError(t, err)
 
 	id, err := ns.Insert(context.Background(), "I will be deleted 😥")
@@ -164,7 +164,7 @@ func TestDelete(t *testing.T) {
 func TestRenew(t *testing.T) {
 	db := setupTestDB(t)
 
-	ns, err := NewSQLCipherNotes(db, testConvert(t, t.Name()))
+	ns, err := newSQLCipherNotes(db, testConvert(t, t.Name()))
 	require.NoError(t, err)
 
 	// prepare some notes
@@ -174,7 +174,7 @@ func TestRenew(t *testing.T) {
 	}
 
 	// create a new instance to simulate a changed markdown configuration
-	ns, err = NewSQLCipherNotes(db, func(s string) (string, error) { return "this simulates a changed markdown parser congifuration", nil })
+	ns, err = newSQLCipherNotes(db, func(s string) (string, error) { return "this simulates a changed markdown parser congifuration", nil })
 	require.NoError(t, err)
 
 	err = ns.Renew(context.Background())
