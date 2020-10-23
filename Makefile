@@ -9,16 +9,16 @@ todo:
 	@grep --line-number TODO $(shell git ls-files | grep -v Makefile)
 
 notes: embeds.go
-	go build -ldflags="-X 'main.Version=$(GIT_REVISION)'" .
+	@go build -ldflags="-X 'main.Version=$(GIT_REVISION)'" .
 
 test: lint
-	go test .
+	@go test .
 
 lint:
-	golangci-lint run .
+	@golangci-lint run .
 
 embeds.go:
-	go run github.com/klingtnet/embed/cmd/embed --include assets --include migrations --include views
+	@go run github.com/klingtnet/embed/cmd/embed --include assets --include migrations --include views
 
 install: notes
 	@install --strip -Dm700 notes $$HOME/.local/bin
@@ -30,13 +30,13 @@ install: notes
 	@echo http://localhost:13333
 
 run: notes
-	./notes run --database-passphrase $$DATABASE_PASSPHRASE --database-path=notes.db --listen-addr=$(LISTEN_ADDR)
+	@./notes run --database-passphrase $$DATABASE_PASSPHRASE --database-path=notes.db --listen-addr=$(LISTEN_ADDR)
 
 renew:
-	./notes renew --database-passphrase $$DATABASE_PASSPHRASE --database-path=notes.db
+	@./notes renew --database-passphrase $$DATABASE_PASSPHRASE --database-path=notes.db
 
 rerun:
-	git ls-files --cached | grep -v embeds.go | entr -c -r make run
+	@git ls-files --cached | grep -v embeds.go | entr -c -r make run
 
 clean:
-	git clean -fd
+	@git clean -fd
