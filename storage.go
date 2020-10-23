@@ -120,32 +120,33 @@ func (s *sqlCipherNotes) Search(ctx context.Context, pattern string) (notes []No
 	defer rows.Close()
 
 	for rows.Next() {
-		// TODO: read directly into Note struct
+		var note Note
 		var (
-			id                                     int64
-			rawDateCreated, noteMarkdown, noteHTML string
-			rawDateUpdated                         = new(string)
-			dateCreated                            time.Time
+			rawDateCreated string
+			rawDateUpdated = new(string)
 		)
-		err = rows.Scan(&id, &rawDateCreated, &rawDateUpdated, &noteMarkdown, &noteHTML)
+		err = rows.Scan(&note.ID, &rawDateCreated, &rawDateUpdated, &note.Markdown, &note.HTML)
 		if err != nil {
 			return
 		}
 
+		var dateCreated time.Time
 		dateCreated, err = time.Parse(time.RFC3339, rawDateCreated)
 		if err != nil {
 			return
 		}
+		note.DateCreated = dateCreated
 
-		dateUpdated := time.Time{}
 		if rawDateUpdated != nil {
+			var dateUpdated time.Time
 			dateUpdated, err = time.Parse(time.RFC3339, *rawDateUpdated)
 			if err != nil {
 				return
 			}
+			note.DateUpdated = dateUpdated
 		}
 
-		notes = append(notes, Note{ID: id, Markdown: noteMarkdown, HTML: template.HTML(noteHTML), DateCreated: dateCreated, DateUpdated: dateUpdated})
+		notes = append(notes, note)
 	}
 	err = rows.Err()
 	return
@@ -216,31 +217,33 @@ func (s *sqlCipherNotes) Notes(ctx context.Context) (notes []Note, err error) {
 	}()
 
 	for rows.Next() {
+		var note Note
 		var (
-			id                                 int64
-			rawDateCreated, markdown, noteHTML string
-			rawDateUpdated                     = new(string)
-			dateCreated                        time.Time
+			rawDateCreated string
+			rawDateUpdated = new(string)
 		)
-		err = rows.Scan(&id, &rawDateCreated, &rawDateUpdated, &markdown, &noteHTML)
+		err = rows.Scan(&note.ID, &rawDateCreated, &rawDateUpdated, &note.Markdown, &note.HTML)
 		if err != nil {
 			return
 		}
 
+		var dateCreated time.Time
 		dateCreated, err = time.Parse(time.RFC3339, rawDateCreated)
 		if err != nil {
 			return
 		}
+		note.DateCreated = dateCreated
 
-		dateUpdated := time.Time{}
 		if rawDateUpdated != nil {
+			var dateUpdated time.Time
 			dateUpdated, err = time.Parse(time.RFC3339, *rawDateUpdated)
 			if err != nil {
 				return
 			}
+			note.DateUpdated = dateUpdated
 		}
 
-		notes = append(notes, Note{ID: id, Markdown: markdown, HTML: template.HTML(noteHTML), DateCreated: dateCreated, DateUpdated: dateUpdated})
+		notes = append(notes, note)
 	}
 	err = rows.Err()
 	return
