@@ -18,6 +18,8 @@ func setupTestDB(t *testing.T) *sql.DB {
 	dbURI := fmt.Sprintf(":memory:?_pragma_key=%s&_pragma_cipher_page_size=4096&_foreign_keys=1", url.QueryEscape(dbPassphrase))
 	db, err := sql.Open("sqlite3", dbURI)
 	require.NoError(t, err)
+
+	require.NoError(t, migrateDatabase(db))
 	return db
 }
 

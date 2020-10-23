@@ -8,10 +8,6 @@ import (
 	"html/template"
 	"time"
 	"unicode"
-
-	"github.com/golang-migrate/migrate/v4"
-	"github.com/golang-migrate/migrate/v4/database/sqlcipher"
-	embedMigrate "github.com/klingtnet/embed/migrate"
 )
 
 type noteStorage interface {
@@ -39,24 +35,6 @@ type sqlCipherNotes struct {
 }
 
 func newSQLCipherNotes(db *sql.DB, markdownToHTML func(string) (string, error)) (*sqlCipherNotes, error) {
-	driver, err := sqlcipher.WithInstance(db, &sqlcipher.Config{})
-	if err != nil {
-		return nil, err
-	}
-
-	sourceDriver, err := embedMigrate.WithInstance(Embeds)
-	if err != nil {
-		return nil, err
-	}
-	m, err := migrate.NewWithInstance("embed", sourceDriver, "sqlite3", driver)
-	if err != nil {
-		return nil, err
-	}
-	err = m.Up()
-	if err != nil && !errors.Is(err, migrate.ErrNoChange) {
-		return nil, err
-	}
-
 	return &sqlCipherNotes{db, markdownToHTML}, nil
 }
 

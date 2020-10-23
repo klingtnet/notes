@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"html/template"
 	"io"
@@ -27,6 +28,10 @@ import (
 	goldmarkEmoji "github.com/yuin/goldmark-emoji"
 	goldmarkExtension "github.com/yuin/goldmark/extension"
 	goldmarkHTML "github.com/yuin/goldmark/renderer/html"
+
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/database/sqlcipher"
+	embedMigrate "github.com/klingtnet/embed/migrate"
 )
 
 // AppName is the name of the application.
@@ -341,6 +346,26 @@ func assetHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func migrateDatabase(db *sql.DB) error {
+	driver, err := sqlcipher.WithInstance(db, &sqlcipher.Config{})
+	if err != nil {
+		return err
+	}
+	sourceDriver, err := embedMigrate.WithInstance(Embeds)
+	if err != nil {
+		return err
+	}
+	m, err := migrate.NewWithInstance("embed", sourceDriver, "sqlite3", driver)
+	if err != nil {
+		return err
+	}
+	err = m.Up()
+	if err != nil && !errors.Is(err, migrate.ErrNoChange) {
+		return err
+	}
+	return nil
+}
+
 func runAction(c *cli.Context) error {
 	dbPath := strings.TrimSpace(c.String("database-path"))
 	if dbPath == "" {
@@ -352,11 +377,21 @@ func runAction(c *cli.Context) error {
 		return fmt.Errorf("required database passphrase is empty")
 	}
 
+	dbURI := fmt.Sprintf("file:%s?_pragma_key=%s&_pragma_cipher_page_size=4096&_foreign_keys=1", dbPath, url.QueryEscape(dbPassphrase))
+	db, err := sql.Open("sqlite3", dbURI)
+	if err != nil {
+		return err
+	}
+	err = migrateDatabase(db)
+	if err != nil {
+		return err
+	}
+
 	indexTemplate = parseTemplate("views/layouts/base.gohtml", "views/index.gohtml")
 	deleteTemplate = parseTemplate("views/layouts/base.gohtml", "views/delete.gohtml")
 	errorTemplate = parseTemplate("views/layouts/base.gohtml", "views/error.gohtml")
 
-	return run(c.Context, dbPath, dbPassphrase, c.String("listen-addr"))
+	return run(c.Context, db, c.String("listen-addr"))
 }
 
 func parseTemplate(layout, content string) *template.Template {
@@ -365,20 +400,14 @@ func parseTemplate(layout, content string) *template.Template {
 	return template.Must(t.Parse(Embeds.FileString(layout)))
 }
 
-func run(ctx context.Context, dbPath, dbPassphrase, httpAddr string) error {
-	dbURI := fmt.Sprintf("file:%s?_pragma_key=%s&_pragma_cipher_page_size=4096&_foreign_keys=1", dbPath, url.QueryEscape(dbPassphrase))
-	db, err := sql.Open("sqlite3", dbURI)
-	if err != nil {
-		return err
-	}
-
+func run(ctx context.Context, db *sql.DB, httpAddr string) error {
 	mdParser := goldmark.New(
 		goldmark.WithExtensions(goldmarkExtension.GFM, goldmarkEmoji.Emoji),
 		goldmark.WithRendererOptions(goldmarkHTML.WithUnsafe()),
 	)
 	markdownToHTML := func(markdown string) (string, error) {
 		buf := bytes.NewBuffer(nil)
-		err = mdParser.Convert([]byte(markdown), buf)
+		err := mdParser.Convert([]byte(markdown), buf)
 		if err != nil {
 			return "", err
 		}
@@ -430,6 +459,11 @@ func renewAction(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
+	err = migrateDatabase(db)
+	if err != nil {
+		return err
+	}
+
 	mdParser := goldmark.New(
 		goldmark.WithExtensions(goldmarkExtension.GFM, goldmarkEmoji.Emoji),
 		goldmark.WithRendererOptions(goldmarkHTML.WithUnsafe()),
