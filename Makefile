@@ -3,7 +3,10 @@ LISTEN_ADDR?=localhost:3333
 
 GIT_REVISION:=$(shell git describe --always --tags)
 
-all: test notes
+all: test todo notes
+
+todo:
+	@grep --line-number TODO $(shell git ls-files | grep -v Makefile)
 
 notes: embeds.go
 	go build -ldflags="-X 'main.Version=$(GIT_REVISION)'" .
