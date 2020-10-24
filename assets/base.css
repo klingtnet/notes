@@ -1,30 +1,235 @@
-div.note-form {
-  display: flex;
-  flex-flow: column;
+:root {
+  /* color palette was generated with https://mycolor.space/?hex=%234A7C4A&sub=1 */
+  --primary: #0098f3;
+  /* --secondary: #5c9d5c; */
+  --warning: #ec5f6c;
+  --white: #f7f7f7;
+  --black: #161616;
+
+  --border-radius: 5px;
+  --border: 1px solid var(--black);
+  --background-color: var(--white);
+  --dimmed: #d5d5d5;
+  --brightened-background: #dadada;
+  --font-color: var(--black);
+  --monospace: "JetBrains Mono", monospace;
 }
 
-textarea#note {
-  font-family: monospace;
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* color palette was generated with https://mycolor.space/?hex=%238EE98E&sub=1 */
+    --primary: #00abff;
+    /* --secondary: #8ee98e; */
+    --warning: #ff6277;
+
+    --border: 1px solid var(--white);
+    --background-color: var(--black);
+    --dimmed: #333731;
+    --brightened-background: #303030;
+    --font-color: var(--white);
+  }
 }
 
-div.content {
-  padding-left: 2rem;
+* {
+  font-family: Cantarell, sans;
+  line-height: 1.4rem;
+  font-size: 1.1rem;
 }
 
-span.version {
-  font-family: monospace;
-  font-size: large;
+html {
+  height: 100%;
 }
 
-time.updated {
-  padding: 0.1rem 0.3rem;
-  border-radius: 0.1rem;
+body {
+  margin: 0;
+  color: var(--font-color);
+  background-color: var(--background-color);
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  height: 100%;
+}
+
+header,
+footer {
+  padding: 2em;
+  background-color: var(--brightened-background);
+}
+
+nav > h1 {
+  font-weight: bold;
+  display: inline;
+  margin-right: 2em;
+  text-transform: uppercase;
+}
+
+nav > ul {
+  list-style: none;
+  display: inline-flex;
+  padding: 0;
+  margin: 0;
+}
+
+nav > ul > li > a {
   font-weight: bold;
 }
 
-footer > ul.footer {
+nav > form {
+  display: inline;
+  float: right;
+}
+
+input#search-pattern {
+  border-radius: var(--border-radius);
+  border: var(--border);
+  min-width: 32ch;
+  padding: 0.5em 2em;
+  color: var(--font-color);
+  background-color: var(--brightened-background);
+}
+
+textarea#note {
+  border-radius: var(--border-radius);
+  border: var(--border);
+  padding: 2em;
+  font-family: var(--monospace);
+  width: 100%;
+  height: 24ch;
+  transition: ease-out 0.3s;
+  color: var(--font-color);
+  background-color: var(--brightened-background);
+}
+
+textarea#note:focus {
+  box-shadow: 0 0 0 100vw #000000cc;
+  transition: ease-in 0.3s;
+}
+
+button {
+  border-radius: var(--border-radius);
+  border: none;
+  background-color: transparent;
+  color: var(--font-color);
+  padding: 0.5em 2em;
+  text-transform: uppercase;
+  transition: ease-out 0.3s;
+}
+
+button.small {
+  padding: 0.1em 1em;
+}
+
+button:hover {
+  background-color: var(--primary);
+  transition: ease-in 0.3s;
+}
+
+button[value="delete"]:hover {
+  background-color: var(--warning);
+}
+
+form.note-edit > button[type="submit"] {
+  margin: 1em 0;
+}
+
+a {
+  text-decoration: none;
+  word-break: break-word;
+  color: var(--primary);
+}
+
+a:not([class]):hover {
+  box-shadow: inset 0 -0.1em 0 var(--primary);
+  transition: ease-in 0.3s;
+}
+
+a.button:hover {
+  box-shadow: none;
+}
+
+main {
+  width: min(72ch, 100%);
+  margin: 4em auto;
+}
+
+main > h2 {
+  text-align: center;
+  margin-top: 2em;
+  text-decoration: underline;
+}
+
+form.note-edit {
+  margin: 2em 1em 3em;
+}
+
+article {
+  margin: 2em 0;
+}
+
+article > div.content {
+  margin-left: 2em;
+}
+
+article img {
+  width: 100%;
+}
+
+div.article-headline > h3 {
+  display: inline;
+}
+
+span.last-update {
+  color: var(--dimmed);
+  transition: ease-in 0.3s;
+  float: right;
+}
+
+span.last-update:hover {
+  color: var(--font-color);
+  transition: ease-in 0.3s;
+}
+
+span.clue {
+  color: var(--dimmed);
+  margin-left: 1em;
+}
+
+var {
+  font-family: var(--monospace);
+}
+
+footer > ul {
   list-style: none;
-  display: grid;
-  color: var(--color-text-secondary);
-  grid-auto-flow: column;
+  display: inline-flex;
+  justify-content: space-around;
+  padding: 0;
+  margin: 0;
+  width: 100%;
+}
+
+pre {
+  border-left: 1em solid var(--primary);
+  padding: 1em;
+  margin: 2em 0;
+  white-space: pre-wrap;
+}
+
+code {
+  font-family: var(--monospace);
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("/assets/JetBrainsMono-Regular.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Cantarell";
+  src: url("/assets/Cantarell-Regular.woff2") format("woff2");
+  font-weight: normal;
+}
+
+@font-face {
+  font-family: "Cantarell";
+  src: url("/assets/Cantarell-Bold.woff2") format("woff2");
+  font-weight: bold;
 }

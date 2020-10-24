@@ -1,32 +1,18 @@
-{{ define "header" }}
-<nav>
-  <ul>
-    <li><a href="/">Home /</a></li>
-  </ul>
-</nav>
-<h1>Tasker</h1>
-{{ end }}
-
-{{ define "main" }}
-<form method="GET" action="/search">
-  <label for="search-pattern">Search:</label>
-  <input type="search" minlength=3 id="search-pattern" name="search-pattern">
+{{ define "content" }}
+<form class="note-edit" method="POST" action="{{ .SubmitAction }}">
+  <textarea id="note" name="note">{{ .EditText }}</textarea>
+  <button type="submit">Submit</button> <span class="clue">ctrl+enter / ⌘+enter</span>
 </form>
-<form method="POST" action="{{ .SubmitAction }}">
-  <div class="note-form">
-    <textarea id="note" name="note" rows=6 cols=80>{{ .EditText }}</textarea>
-    <button type="submit">Submit</button>
-  </div>
-</form>
-{{ if .Heading }}
-<h2>{{ .Heading }}</h2>
-{{ end }}
 {{ range $day := .Days }}
   <h2><time datetime='{{ $day.Format "2006-01-02T15:04:05.000-0700" }}'>{{ $day.Format "Monday, 02-Jan-2006" }}</time></h2>
   {{ range $_, $note := (index $.NotesByDay $day) }}
   <article>
-    <h3><time>{{ $note.DateCreated.Format "15:04" }}</time> (<a href="/note/{{ $note.ID }}/edit">edit</a>)</h3>
-    {{ if not $note.DateUpdated.IsZero }}Last update <time class="updated" datetime='{{ $note.DateUpdated.Format "2006-01-02T15:04:05.000-0700" }}'>{{ $note.DateUpdated.Format "15:04" }}</time>{{ end }}
+    <div class="article-headline">
+      <h3><time>{{ $note.DateCreated.Format "15:04" }}</time></h3> <a class="button" href="/note/{{ $note.ID }}/edit"><button class="small">edit</button></a> <a class="button" href="/note/{{ $note.ID }}/delete"><button class="small" value="delete">delete</button></a>
+      {{ if not $note.DateUpdated.IsZero }}
+      <span class="last-update">Last update <time class="updated" datetime='{{ $note.DateUpdated.Format "2006-01-02T15:04:05.000-0700" }}'>{{ $note.DateUpdated.Format "15:04" }}</time></span>
+      {{ end }}
+    </div>
     <div class="content">
     {{ $note.HTML }}
     </div>
@@ -34,37 +20,3 @@
   {{ end }}
 {{ end }}
 {{ end }}
-
-{{ define "footer" }}
-<ul class="footer">
-  <li>{{ .AppName }}</li>
-  <li>Version: <span class="version">{{ .Version }}</span></li>
-  <li>rendered at <time datetime='{{ .RenderDate.Format "2006-01-02T15:04:05.000-0700" }}'>{{ .RenderDate.Format "2006-01-02T15:04" }}</time></li>
-</ul>
-{{ end }}
-
-{{ define "base" }}
-<!doctype html>
-<html lang="en">
-<head>
-  <title>{{ .Title }}</title>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="icon" href="/assets/favicon.svg">
-  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.2/styles/default.min.css">
-  <link rel="stylesheet" href="https://unpkg.com/mvp.css">
-  <link rel="stylesheet" href="/assets/base.css">
-  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.2/styles/default.min.css">
-  <script defer src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.2/highlight.min.js"></script>
-</head>
-<body>
-  <header>{{ template "header" .Header }}</header>
-  <main>{{ template "main" .Main }}</main>
-  <footer>{{ template "footer" .Footer }}</footer>
-  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.2/highlight.min.js"></script>
-  <script>hljs.initHighlightingOnLoad();</script>
-</body>
-</html>
-{{ end }}
-
-{{ template "base" . }}

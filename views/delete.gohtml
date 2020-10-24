@@ -1,0 +1,7 @@
+{{ define "content" }}
+<p>Please confirm that you want to delete note {{ .NoteID }}:</p>
+<form method="POST" action="{{ .DeleteURL }}">
+  <button type="submit" name="submit" value="delete">Delete</button>
+  <button type="submit" name="submit" value="cancel">Cancel</button>
+</form>
+{{ end }}

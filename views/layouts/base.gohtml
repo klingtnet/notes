@@ -1,0 +1,46 @@
+{{ define "header" }}
+<nav>
+  <h1>{{ .AppName }}</h1>
+  <ul>
+    <li><a href="/">Home /</a></li>
+  </ul>
+  <form class="nav-search" method="GET" action="/search">
+    <input type="search" minlength=3 id="search-pattern" name="search-pattern" placeholder="What are you looking for?">
+    {{/* <button type="submit">Search</button> */}}
+  </form>
+</nav>
+{{ end }}
+
+{{ define "footer" }}
+<ul class="footer">
+  <li>{{ .AppName }}</li>
+  <li>Version: <var>{{ .Version }}</var></li>
+  <li>rendered at <time datetime='{{ .RenderDate.Format "2006-01-02T15:04:05.000-0700" }}'>{{ .RenderDate.Format "2006-01-02T15:04" }}</time></li>
+</ul>
+{{ end }}
+
+{{ define "main" }}
+<h2>{{ .Heading }}</h2>
+{{ template "content" .Content }}
+{{ end }}
+
+{{ define "base" }}
+<!doctype html>
+<html lang="en">
+<head>
+  <title>{{ .Title }}</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="/assets/favicon.svg">
+  <link rel="stylesheet" href="/assets/base.css">
+  <script defer src="/assets/base.js"></script>
+</head>
+<body>
+  <header>{{ template "header" .Header }}</header>
+  <main>{{ template "main" .Main }}</main>
+  <footer>{{ template "footer" .Footer }}</footer>
+</body>
+</html>
+{{ end }}
+
+{{ template "base" . }}
